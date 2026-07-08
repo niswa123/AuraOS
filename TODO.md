@@ -40,14 +40,14 @@ This document outlines the detailed development tasks required to build the Aura
 
 ---
 
-## [ ] Phase 4: Module 3 - Chronos Trigger System
-- [ ] Implement the Event Broker engine in Node.js.
-- [ ] **Hibernation Controls**
-  - [ ] Implement execution suspend API: teardown active Wasm/Docker sandboxes and save context status.
-- [ ] **Wake-up Triggers**
-  - [ ] *Webhook Trigger*: Build HTTP Router endpoint to listen to external webhooks and trigger container hydrate cycles.
-  - [ ] *Cron Trigger*: Integrate Node-cron scheduler to fire agents on recurring intervals.
-  - [ ] *Async Task Trigger*: Set up callback queues to wake up agents when long-running sub-tasks complete.
+## [x] Phase 4: Module 3 - Chronos Trigger System
+- [x] Implement the Event Broker engine in Node.js.
+- [x] **Hibernation Controls**
+  - [x] Implement execution suspend API: teardown active Wasm/Docker sandboxes and save context status.
+- [x] **Wake-up Triggers**
+  - [x] *Webhook Trigger*: Build HTTP Router endpoint to listen to external webhooks and trigger container hydrate cycles.
+  - [x] *Cron Trigger*: Integrate Node-cron scheduler to fire agents on recurring intervals.
+  - [x] *Async Task Trigger*: Set up callback queues to wake up agents when long-running sub-tasks complete.
 
 ---
 
