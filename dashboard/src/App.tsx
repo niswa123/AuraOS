@@ -16,7 +16,8 @@ import {
   Terminal as ConsoleIcon,
   Check,
   Copy,
-  Key
+  Key,
+  BookOpen
 } from 'lucide-react';
 
 interface Agent {
@@ -89,6 +90,7 @@ export default function App() {
   const [integrationTab, setIntegrationTab] = useState<'code' | 'curl' | 'python' | 'ts'>('code');
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [showSdkModal, setShowSdkModal] = useState<boolean>(false);
+  const [showDocsModal, setShowDocsModal] = useState<boolean>(false);
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState<boolean>(false);
@@ -437,7 +439,16 @@ console.log('Output logs:', result.stdout);`;
         </div>
 
         {/* Live status indicators */}
-        <div className="status-badge-group" style={{ gap: '16px' }}>
+        <div className="status-badge-group" style={{ gap: '12px' }}>
+          <button 
+            onClick={() => setShowDocsModal(true)} 
+            className="btn btn-secondary" 
+            style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px', background: 'rgba(16, 185, 129, 0.08)', borderColor: 'rgba(16, 185, 129, 0.2)' }}
+          >
+            <BookOpen style={{ width: '12px', height: '12px', color: '#10b981' }} />
+            Docs & Reference
+          </button>
+
           <button 
             onClick={() => setShowSdkModal(true)} 
             className="btn btn-secondary" 
@@ -1003,7 +1014,6 @@ console.log('Output logs:', result.stdout);`;
           </div>
         </div>
       )}
-
       {/* Custom Delete Confirmation Modal */}
       {showDeleteModal && agentToDelete && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
@@ -1061,6 +1071,119 @@ console.log('Output logs:', result.stdout);`;
         </div>
       )}
 
+      {/* Docs & Reference Modal */}
+      {showDocsModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="panel custom-scrollbar" style={{ maxWidth: '780px', width: '90%', maxHeight: '85vh', overflowY: 'auto', padding: '28px', position: 'relative', display: 'flex', flexDirection: 'column', gap: '24px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+            
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BookOpen style={{ width: '20px', height: '20px', color: '#10b981' }} />
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: '#fff' }}>AuraOS Documentation & Reference</h3>
+              </div>
+              <button 
+                onClick={() => setShowDocsModal(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0 }}
+              >
+                <X style={{ width: '18px', height: '18px' }} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', fontSize: '0.8rem', lineHeight: '1.6', color: 'var(--color-text-secondary)' }}>
+              
+              {/* Section 1 */}
+              <div>
+                <h4 style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>1. Local SDK Installation</h4>
+                <p style={{ margin: '0 0 8px 0' }}>Install package locally inside your terminal from repository root:</p>
+                <pre style={{ background: 'rgba(0,0,0,0.4)', padding: '12px', borderRadius: '6px', fontFamily: 'monospace', color: 'var(--neon-teal)', border: '1px solid rgba(255,255,255,0.03)' }}>
+                  pip install -e ./sdk/python
+                </pre>
+              </div>
+
+              {/* Section 2 */}
+              <div>
+                <h4 style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>2. SDK Sandbox Integration Code</h4>
+                <p style={{ margin: '0 0 8px 0' }}>Instantiate container sandboxes programmatically in Python:</p>
+                <pre style={{ background: 'rgba(0,0,0,0.4)', padding: '12px', borderRadius: '6px', fontFamily: 'monospace', color: 'var(--color-text-secondary)', border: '1px solid rgba(255,255,255,0.03)', overflowX: 'auto' }}>
+{`from auraos import Sandbox
+
+sb = Sandbox(runtime="python", api_key="${mockApiKey}")
+
+# Run code in secure Docker container sandbox
+result = sb.run("""
+import time
+print("Running container process cycle...")
+time.sleep(1)
+""")
+
+print("Stdout:", result.stdout)
+print("Duration:", result.duration_ms, "ms")`}
+                </pre>
+              </div>
+
+              {/* Section 3 */}
+              <div>
+                <h4 style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>3. REST API Gateway Router</h4>
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.02)', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <th style={{ padding: '8px', fontWeight: 'bold', color: '#fff' }}>Route / Endpoint</th>
+                      <th style={{ padding: '8px', fontWeight: 'bold', color: '#fff' }}>Method</th>
+                      <th style={{ padding: '8px', fontWeight: 'bold', color: '#fff' }}>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <td style={{ padding: '8px', fontFamily: 'monospace', color: 'var(--neon-teal)' }}>/api/sandboxes</td>
+                      <td style={{ padding: '8px', fontWeight: 'bold', color: '#818cf8' }}>POST</td>
+                      <td style={{ padding: '8px' }}>Execute ad-hoc code in sandbox synchronously</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <td style={{ padding: '8px', fontFamily: 'monospace', color: 'var(--neon-teal)' }}>/api/agents</td>
+                      <td style={{ padding: '8px', fontWeight: 'bold', color: '#818cf8' }}>POST</td>
+                      <td style={{ padding: '8px' }}>Register new persistent agent script</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <td style={{ padding: '8px', fontFamily: 'monospace', color: 'var(--neon-teal)' }}>/webhook/:agentId</td>
+                      <td style={{ padding: '8px', fontWeight: 'bold', color: '#818cf8' }}>POST</td>
+                      <td style={{ padding: '8px' }}>Trigger registered agent execution (async)</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '8px', fontFamily: 'monospace', color: 'var(--neon-teal)' }}>/webhook/db-change</td>
+                      <td style={{ padding: '8px', fontWeight: 'bold', color: '#818cf8' }}>POST</td>
+                      <td style={{ padding: '8px' }}>Simulate database mutation trigger (Supabase)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Section 4 */}
+              <div>
+                <h4 style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>4. Sandbox Security Controls</h4>
+                <p style={{ margin: 0 }}>
+                  Sandbox containers run with strict resource caps to prevent host exhaustion. The hard boundary defaults are:
+                  RAM: <strong style={{ color: '#fff' }}>128MB</strong> (swap disabled) | CPU: <strong style={{ color: '#fff' }}>0.5 core</strong> | Timeout: <strong style={{ color: '#fff' }}>15s</strong> | Network: <strong style={{ color: '#fff' }}>Egress Whitelist (port 8086)</strong>
+                </p>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setShowDocsModal(false)}
+                className="btn btn-primary"
+                style={{ minWidth: '100px', padding: '8px 16px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+              >
+                Close Docs
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
