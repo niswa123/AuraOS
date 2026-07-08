@@ -1074,7 +1074,7 @@ console.log('Output logs:', result.stdout);`;
       {/* Docs & Reference Modal */}
       {showDocsModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div className="panel custom-scrollbar" style={{ maxWidth: '780px', width: '90%', maxHeight: '85vh', overflowY: 'auto', padding: '28px', position: 'relative', display: 'flex', flexDirection: 'column', gap: '24px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+          <div className="panel" style={{ maxWidth: '780px', width: '90%', maxHeight: '85vh', padding: '28px', position: 'relative', display: 'flex', flexDirection: 'column', border: '1px solid rgba(16, 185, 129, 0.2)', overflow: 'hidden' }}>
             
             {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
@@ -1090,8 +1090,8 @@ console.log('Output logs:', result.stdout);`;
               </button>
             </div>
 
-            {/* Modal Content */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', fontSize: '0.8rem', lineHeight: '1.6', color: 'var(--color-text-secondary)' }}>
+            {/* Scrollable Modal Content */}
+            <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', paddingRight: '16px', marginTop: '20px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '20px', fontSize: '0.8rem', lineHeight: '1.6', color: 'var(--color-text-secondary)' }}>
               
               {/* Section 1 */}
               <div>
