@@ -5,12 +5,24 @@
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
+import { db } from '../db/client.js';
 
 export interface LiveEvent {
-  type: 'status_change' | 'log' | 'state_change' | 'timeline_transition';
+  type: 'status_change' | 'log' | 'state_change' | 'timeline_transition' | 'init_agents' | 'agent_details';
   agentId: string;
   timestamp: string;
   payload: Record<string, unknown>;
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const date = new Date(dateStr);
+  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (seconds < 5) return 'Active now';
+  if (seconds < 60) return `${seconds}s ago`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h ago`;
 }
 
 class LiveStreamBroadcaster {
@@ -23,16 +35,98 @@ class LiveStreamBroadcaster {
     this.wss = new WebSocketServer({ port });
     console.log(`[Live Stream] WebSocket server listening on port ${port}`);
 
-    this.wss.on('connection', (ws) => {
+    this.wss.on('connection', async (ws) => {
       this.clients.add(ws);
       console.log(`[Live Stream] Dashboard client connected (${this.clients.size} active clients)`);
 
-      // Send initial welcome message
+      // 1. Send initial welcome message
       ws.send(JSON.stringify({
         type: 'system',
         message: 'Connected to AuraOS Live Stream Broadcaster',
         timestamp: new Date().toISOString()
       }));
+
+      // 2. Query database for all agents and their latest execution statuses
+      try {
+        const result = await db.query(`
+          SELECT 
+            a.id, 
+            a.name, 
+            a.configuration->>'runtime' as runtime,
+            COALESCE(e.status, 'sleeping') as status,
+            e.updated_at
+          FROM agents a
+          LEFT JOIN LATERAL (
+            SELECT status, updated_at 
+            FROM executions 
+            WHERE agent_id = a.id 
+            ORDER BY created_at DESC 
+            LIMIT 1
+          ) e ON true
+          ORDER BY a.name ASC
+        `);
+
+        ws.send(JSON.stringify({
+          type: 'init_agents',
+          agentId: 'system',
+          timestamp: new Date().toISOString(),
+          payload: {
+            agents: result.rows.map(row => ({
+              id: row.id,
+              name: row.name,
+              runtime: row.runtime || 'python',
+              status: row.status,
+              lastActive: row.updated_at ? formatTimeAgo(row.updated_at.toISOString()) : 'never'
+            }))
+          }
+        }));
+      } catch (err) {
+        console.error('[Live Stream] Error sending initial agents list:', err);
+      }
+
+      // 3. Listen for client requests (e.g. request details/variables of selected agent)
+      ws.on('message', async (message) => {
+        try {
+          const raw = message.toString();
+          const data = JSON.parse(raw);
+
+          if (data.action === 'get_agent_details' && data.agentId) {
+            const agentId = data.agentId;
+
+            // Fetch latest variables from states
+            const stateRes = await db.query(
+              `SELECT variables, memory_snapshot, created_at 
+               FROM states 
+               WHERE agent_id = $1 
+               ORDER BY created_at DESC 
+               LIMIT 1`,
+              [agentId]
+            );
+
+            const variables = stateRes.rows[0]?.variables || {};
+            const memorySnapshot = stateRes.rows[0]?.memory_snapshot || {};
+            
+            // Map status timeline stage
+            const timelineStage = memorySnapshot.triggerType === 'cron' 
+              ? 'Sleep' 
+              : memorySnapshot.triggerType === 'webhook' 
+              ? 'Hibernate' 
+              : 'Sleep';
+
+            ws.send(JSON.stringify({
+              type: 'agent_details',
+              agentId,
+              timestamp: new Date().toISOString(),
+              payload: {
+                variables,
+                timelineStage
+              }
+            }));
+          }
+        } catch (err) {
+          console.error('[Live Stream] Error handling client message:', err);
+        }
+      });
 
       ws.on('close', () => {
         this.clients.delete(ws);
