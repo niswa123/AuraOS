@@ -44,7 +44,10 @@ export async function createContainer(opts: ContainerCreateOptions): Promise<Doc
       MemorySwap: opts.memoryBytes, // No swap, hard memory limit
       NanoCpus: Math.round(opts.cpuCores * 1e9),
       PidsLimit: opts.pidsLimit,
-      ReadonlyRootfs: false,
+      ReadonlyRootfs: true,
+      Tmpfs: {
+        '/tmp': 'size=64m,mode=1777'
+      },
       SecurityOpt: ['no-new-privileges'],
     },
   });

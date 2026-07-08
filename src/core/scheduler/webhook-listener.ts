@@ -26,13 +26,35 @@ export class WebhookListener {
         if (match && (method === 'POST' || method === 'GET')) {
           const agentId = match[1];
           let body = '';
+          let bodySize = 0;
+          const MAX_PAYLOAD_SIZE = 1 * 1024 * 1024; // 1 MB limit
 
+          // Simple token authentication check if secret is configured
+          const webhookSecret = process.env.WEBHOOK_SECRET;
+          const requestToken = req.headers['x-auraos-token'];
+          
+          if (webhookSecret && requestToken !== webhookSecret) {
+            res.writeHead(401, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: false, error: 'Unauthorized. Invalid X-AuraOS-Token.' }));
+            return;
+          }
+
+          let limitExceeded = false;
           req.on('data', chunk => {
+            if (limitExceeded) return;
+            bodySize += chunk.length;
+            if (bodySize > MAX_PAYLOAD_SIZE) {
+              limitExceeded = true;
+              res.writeHead(413, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ success: false, error: 'Payload Too Large. Limit is 1MB.' }));
+              req.destroy();
+              return;
+            }
             body += chunk.toString();
           });
 
           req.on('end', async () => {
-            res.writeHead(200, { 'Content-Type': 'application/json' });
+            if (limitExceeded) return;
             
             try {
               let parsedBody = {};
@@ -49,6 +71,7 @@ export class WebhookListener {
                 headers: req.headers
               });
 
+              res.writeHead(200, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({
                 success: true,
                 message: `Wakeup event dispatched for agent ${agentId}`,
