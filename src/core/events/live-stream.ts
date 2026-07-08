@@ -73,12 +73,17 @@ class LiveStreamBroadcaster {
   /**
    * Broadcast container or agent status modifications.
    */
-  sendStatus(agentId: string, status: 'running' | 'hibernating' | 'sleeping' | 'completed' | 'failed') {
+  sendStatus(
+    agentId: string, 
+    status: 'running' | 'hibernating' | 'sleeping' | 'completed' | 'failed',
+    name?: string,
+    runtime?: 'python' | 'node'
+  ) {
     this.broadcast({
       type: 'status_change',
       agentId,
       timestamp: new Date().toISOString(),
-      payload: { status }
+      payload: { status, name, runtime }
     });
   }
 

@@ -101,7 +101,24 @@ export default function App() {
         const { type, agentId, timestamp, payload } = data;
 
         if (type === 'status_change') {
-          setAgents(prev => prev.map(a => a.id === agentId ? { ...a, status: payload.status, lastActive: 'Active now' } : a));
+          setAgents(prev => {
+            const exists = prev.some(a => a.id === agentId);
+            if (exists) {
+              return prev.map(a => a.id === agentId ? { ...a, status: payload.status, lastActive: 'Active now' } : a);
+            } else {
+              return [
+                ...prev,
+                {
+                  id: agentId,
+                  name: (payload.name as string) || 'Dynamic Container',
+                  runtime: (payload.runtime as 'python' | 'node') || 'python',
+                  status: payload.status as Agent['status'],
+                  lastActive: 'Active now'
+                }
+              ];
+            }
+          });
+          setSelectedAgentId(agentId);
         }
 
         if (type === 'log') {
