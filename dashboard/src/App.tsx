@@ -10,7 +10,9 @@ import {
   Activity,
   AlertCircle,
   Plus,
-  X
+  X,
+  Edit2,
+  Trash2
 } from 'lucide-react';
 
 interface Agent {
@@ -55,6 +57,8 @@ export default function App() {
   const [logs, setLogs] = useState<Record<string, LogEntry[]>>({});
   const [variables, setVariables] = useState<Record<string, Record<string, any>>>({});
   const [timelines, setTimelines] = useState<Record<string, 'Trigger' | 'Active' | 'Hibernate' | 'Sleep'>>({});
+  const [agentCodes, setAgentCodes] = useState<Record<string, string>>({});
+  const [agentRuntimes, setAgentRuntimes] = useState<Record<string, 'python' | 'node'>>({});
 
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const logContainerRef = useRef<HTMLDivElement>(null);
@@ -67,6 +71,13 @@ export default function App() {
   const [newAgentCode, setNewAgentCode] = useState<string>(DEFAULT_PYTHON_CODE);
   const [formSubmitting, setFormSubmitting] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // --- Edit Form States ---
+  const [showEditForm, setShowEditForm] = useState<boolean>(false);
+  const [editAgentName, setEditAgentName] = useState<string>('');
+  const [editAgentRuntime, setEditAgentRuntime] = useState<'python' | 'node'>('python');
+  const [editAgentCode, setEditAgentCode] = useState<string>('');
+  const [editSubmitting, setEditSubmitting] = useState<boolean>(false);
 
   // --- WebSockets Integration ---
   useEffect(() => {
@@ -107,10 +118,21 @@ export default function App() {
             ...prev,
             [agentId]: payload.timelineStage || 'Sleep'
           }));
+          if (payload.code) {
+            setAgentCodes(prev => ({ ...prev, [agentId]: payload.code }));
+          }
+          if (payload.runtime) {
+            setAgentRuntimes(prev => ({ ...prev, [agentId]: payload.runtime }));
+          }
         }
 
-        // 3. Status changes (dynamic running/sleeping changes)
+        // 3. Status changes (dynamic running/sleeping changes, or deletions)
         if (type === 'status_change') {
+          if (payload.status === 'deleted') {
+            setAgents(prev => prev.filter(a => a.id !== agentId));
+            setSelectedAgentId(prev => prev === agentId ? null : prev);
+            return;
+          }
           setAgents(prev => {
             const exists = prev.some(a => a.id === agentId);
             if (exists) {
@@ -177,6 +199,8 @@ export default function App() {
         agentId: selectedAgentId
       }));
     }
+    // Close forms when changing selection
+    setShowEditForm(false);
   }, [selectedAgentId, wsConnected]);
 
   // --- Auto-scroll logs ---
@@ -191,7 +215,7 @@ export default function App() {
   const activeVariables = selectedAgent ? variables[selectedAgent.id] || {} : null;
   const activeTimeline = selectedAgent ? timelines[selectedAgent.id] || 'Sleep' : 'Sleep';
 
-  // --- Trigger wakeup or hibernate ---
+  // --- Trigger wakeup ---
   const triggerWakeup = async () => {
     if (!selectedAgent) return;
     try {
@@ -280,6 +304,55 @@ export default function App() {
       setFormError(err.message || 'Error occurred during registration.');
     } finally {
       setFormSubmitting(false);
+    }
+  };
+
+  // --- Update agent (Edit) ---
+  const handleEditAgent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAgentId || !editAgentName.trim() || !editAgentCode.trim()) return;
+
+    setEditSubmitting(true);
+    try {
+      const response = await fetch(`http://localhost:8081/api/agents/${selectedAgentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editAgentName,
+          runtime: editAgentRuntime,
+          code: editAgentCode
+        })
+      });
+      if (!response.ok) throw new Error('Failed to update agent.');
+
+      // Update local state list
+      setAgents(prev => prev.map(a => a.id === selectedAgentId ? { ...a, name: editAgentName, runtime: editAgentRuntime } : a));
+      setAgentCodes(prev => ({ ...prev, [selectedAgentId]: editAgentCode }));
+      setAgentRuntimes(prev => ({ ...prev, [selectedAgentId]: editAgentRuntime }));
+      setShowEditForm(false);
+    } catch (err) {
+      console.error(err);
+      alert('Error updating agent.');
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  // --- Delete agent ---
+  const handleDeleteAgent = async () => {
+    if (!selectedAgent) return;
+    const confirm = window.confirm(`Are you sure you want to delete the agent "${selectedAgent.name}"? This will permanently erase all associated executions and states.`);
+    if (!confirm) return;
+
+    try {
+      const response = await fetch(`http://localhost:8081/api/agents/${selectedAgent.id}`, {
+        method: 'DELETE'
+      });
+      if (!response.ok) throw new Error('Deletion failed.');
+      // The WebSocket status_change listener will catch the 'deleted' event and update agents/selectedId reactively.
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting agent.');
     }
   };
 
@@ -398,6 +471,65 @@ export default function App() {
                 </button>
               </form>
             </div>
+          ) : showEditForm && selectedAgent ? (
+            /* Edit Agent Form Panel */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: '0', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)' }}>
+                  Edit Agent Config
+                </h3>
+                <button 
+                  onClick={() => setShowEditForm(false)} 
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '0' }}
+                >
+                  <X style={{ width: '18px', height: '18px' }} />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditAgent}>
+                <div className="form-group">
+                  <label className="form-label">Agent Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    value={editAgentName}
+                    onChange={(e) => setEditAgentName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Runtime Engine</label>
+                  <select 
+                    className="form-select"
+                    value={editAgentRuntime}
+                    onChange={(e) => setEditAgentRuntime(e.target.value as 'python' | 'node')}
+                  >
+                    <option value="python">Python 3.12 (secure sandbox)</option>
+                    <option value="node">Node.js 20 (secure sandbox)</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Execution Code Script</label>
+                  <textarea 
+                    className="form-textarea custom-scrollbar" 
+                    value={editAgentCode}
+                    onChange={(e) => setEditAgentCode(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={editSubmitting}
+                  className="btn btn-primary" 
+                  style={{ width: '100%', padding: '12px', marginTop: '8px' }}
+                >
+                  {editSubmitting ? 'Saving changes...' : 'Save Configuration'}
+                </button>
+              </form>
+            </div>
           ) : (
             /* Agent List Selection view */
             <>
@@ -478,9 +610,9 @@ export default function App() {
                 Register New Agent
               </button>
 
-              {/* Manual Override controls for selected agent */}
+              {/* Manual Override & Config CRUD controls for selected agent */}
               {selectedAgent && (
-                <div className="manual-override-section">
+                <div className="manual-override-section" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <h3>Manual Override</h3>
                   <div className="override-btn-group">
                     <button 
@@ -498,6 +630,31 @@ export default function App() {
                     >
                       <Pause style={{ width: '14px', height: '14px' }} />
                       Hibernate
+                    </button>
+                  </div>
+
+                  {/* Edit and Delete Buttons */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '4px' }}>
+                    <button 
+                      onClick={() => {
+                        setEditAgentName(selectedAgent.name);
+                        setEditAgentRuntime(agentRuntimes[selectedAgent.id] || selectedAgent.runtime);
+                        setEditAgentCode(agentCodes[selectedAgent.id] || '');
+                        setShowEditForm(true);
+                      }}
+                      className="btn btn-secondary"
+                      style={{ gap: '6px', background: 'rgba(255,255,255,0.01)', borderColor: 'rgba(255,255,255,0.05)' }}
+                    >
+                      <Edit2 style={{ width: '12px', height: '12px' }} />
+                      Edit Config
+                    </button>
+                    <button 
+                      onClick={handleDeleteAgent}
+                      className="btn btn-secondary"
+                      style={{ gap: '6px', color: 'var(--color-error)', background: 'rgba(244,63,94,0.03)', borderColor: 'rgba(244,63,94,0.1)' }}
+                    >
+                      <Trash2 style={{ width: '12px', height: '12px' }} />
+                      Delete Agent
                     </button>
                   </div>
                 </div>

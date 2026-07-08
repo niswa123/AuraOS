@@ -93,7 +93,7 @@ class LiveStreamBroadcaster {
           if (data.action === 'get_agent_details' && data.agentId) {
             const agentId = data.agentId;
 
-            // Fetch latest variables from states
+            // A. Fetch latest variables from states
             const stateRes = await db.query(
               `SELECT variables, memory_snapshot, created_at 
                FROM states 
@@ -113,13 +113,25 @@ class LiveStreamBroadcaster {
               ? 'Hibernate' 
               : 'Sleep';
 
+            // B. Fetch configuration and code from agents
+            const agentRes = await db.query(
+              `SELECT name, configuration FROM agents WHERE id = $1`,
+              [agentId]
+            );
+            const agent = agentRes.rows[0];
+            const config = agent?.configuration || {};
+            const code = config.code || '';
+            const runtime = config.runtime || 'python';
+
             ws.send(JSON.stringify({
               type: 'agent_details',
               agentId,
               timestamp: new Date().toISOString(),
               payload: {
                 variables,
-                timelineStage
+                timelineStage,
+                code,
+                runtime
               }
             }));
           }

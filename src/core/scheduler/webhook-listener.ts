@@ -44,7 +44,43 @@ export class WebhookListener {
           res.end(JSON.stringify(data));
         };
 
-        // 2. REST API Route: Register agent from UI
+        // 2. REST API Route: List all agents (Read)
+        if (url === '/api/agents' && method === 'GET') {
+          try {
+            const result = await db.query(`
+              SELECT 
+                a.id, 
+                a.name, 
+                a.configuration->>'runtime' as runtime,
+                COALESCE(e.status, 'sleeping') as status,
+                e.updated_at
+              FROM agents a
+              LEFT JOIN LATERAL (
+                SELECT status, updated_at 
+                FROM executions 
+                WHERE agent_id = a.id 
+                ORDER BY created_at DESC 
+                LIMIT 1
+              ) e ON true
+              ORDER BY a.name ASC
+            `);
+            sendJson(200, {
+              success: true,
+              agents: result.rows.map(row => ({
+                id: row.id,
+                name: row.name,
+                runtime: row.runtime || 'python',
+                status: row.status,
+                lastActive: row.updated_at ? row.updated_at.toISOString() : 'never'
+              }))
+            });
+          } catch (err: any) {
+            sendJson(500, { success: false, error: err.message });
+          }
+          return;
+        }
+
+        // 3. REST API Route: Register agent from UI (Create)
         if (url === '/api/agents' && method === 'POST') {
           let body = '';
           let bodySize = 0;
@@ -110,6 +146,58 @@ export class WebhookListener {
             }
           });
           return;
+        }
+
+        // 4. REST API Routes: Update & Delete Agents (PUT / DELETE)
+        const agentApiMatch = url.match(/^\/api\/agents\/([a-zA-Z0-9-]+)$/);
+        if (agentApiMatch) {
+          const agentId = agentApiMatch[1];
+
+          if (method === 'PUT') {
+            let body = '';
+            req.on('data', chunk => {
+              body += chunk.toString();
+            });
+
+            req.on('end', async () => {
+              try {
+                const { name, runtime, code } = JSON.parse(body);
+
+                if (!name || !runtime || !code) {
+                  sendJson(400, { success: false, error: 'Missing name, runtime, or code.' });
+                  return;
+                }
+
+                await db.query(
+                  "UPDATE agents SET name = $1, configuration = $2, updated_at = NOW() WHERE id = $3",
+                  [name, JSON.stringify({ runtime, code }), agentId]
+                );
+
+                // Broadcast update
+                liveStream.sendStatus(agentId, 'sleeping', name, runtime);
+
+                sendJson(200, { success: true, message: 'Agent updated successfully.' });
+              } catch (err: any) {
+                sendJson(500, { success: false, error: err.message });
+              }
+            });
+            return;
+          }
+
+          if (method === 'DELETE') {
+            try {
+              // Deleting agent CASCADE deletes all executions and states in DB
+              await db.query("DELETE FROM agents WHERE id = $1", [agentId]);
+
+              // Broadcast deletion to all open UI dashboards
+              liveStream.sendStatus(agentId, 'deleted');
+
+              sendJson(200, { success: true, message: 'Agent deleted successfully.' });
+            } catch (err: any) {
+              sendJson(500, { success: false, error: err.message });
+            }
+            return;
+          }
         }
 
         // 3. REST API Route: Webhook Trigger Wakeup
