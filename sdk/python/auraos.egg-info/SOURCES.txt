@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+auraos/__init__.py
+auraos/client.py
+auraos.egg-info/PKG-INFO
+auraos.egg-info/SOURCES.txt
+auraos.egg-info/dependency_links.txt
+auraos.egg-info/requires.txt
+auraos.egg-info/top_level.txt

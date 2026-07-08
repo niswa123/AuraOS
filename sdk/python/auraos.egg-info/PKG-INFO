@@ -1,0 +1,31 @@
+Metadata-Version: 2.4
+Name: auraos
+Version: 0.1.0
+Summary: Python SDK for AuraOS Agentic Runtime Environment
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.25.0
+
+# AuraOS Python SDK
+
+A minimal, production-grade Python client library to programmatically interact with AuraOS. Spin up secure cgroup-clamped Docker sandboxes, run dynamic code scripts ad-hoc, and receive immediate console logs and execution metrics.
+
+## Installation
+
+```bash
+pip install -e .
+```
+
+## Quickstart
+
+```python
+from auraos import Sandbox
+
+sb = Sandbox(runtime="python", api_key="ao_test_...")
+
+# Run code in sandbox
+result = sb.run("print('Hello from AuraOS!')")
+
+print(f"Stdout: {result.stdout}")
+print(f"Duration: {result.duration_ms}ms")
+```

@@ -8,6 +8,7 @@ import http from 'http';
 import { eventBroker } from './event-broker.js';
 import { db } from '../db/client.js';
 import { liveStream } from '../events/live-stream.js';
+import { executeInSandbox } from '../sandbox/orchestrator.js';
 
 export class WebhookListener {
   private server: http.Server | null = null;
@@ -43,6 +44,57 @@ export class WebhookListener {
           });
           res.end(JSON.stringify(data));
         };
+
+        // Ad-hoc Sandbox Execution Endpoint (for SDK runs)
+        if (url === '/api/sandboxes' && method === 'POST') {
+          let body = '';
+          req.on('data', chunk => {
+            body += chunk.toString();
+          });
+          req.on('end', async () => {
+            try {
+              const { runtime, code, env, limits } = JSON.parse(body);
+              if (!runtime || !code) {
+                sendJson(400, { success: false, error: 'Missing runtime or code.' });
+                return;
+              }
+              if (runtime !== 'python' && runtime !== 'node') {
+                sendJson(400, { success: false, error: 'Runtime must be "python" or "node".' });
+                return;
+              }
+
+              const executionId = `sdk-${Date.now().toString().slice(-6)}`;
+              const result = await executeInSandbox({
+                executionId,
+                runtime,
+                code,
+                limits: {
+                  memoryBytes: limits?.memoryBytes || 128 * 1024 * 1024,
+                  cpuCores: limits?.cpuCores || 0.5,
+                  timeoutMs: limits?.timeoutMs || 15000,
+                  pidsLimit: limits?.pidsLimit || 32,
+                  networkDisabled: limits?.networkDisabled ?? false
+                },
+                env
+              });
+
+              sendJson(200, {
+                success: true,
+                executionId: result.executionId,
+                exitCode: result.exitCode,
+                stdout: result.stdout,
+                stderr: result.stderr,
+                durationMs: result.durationMs,
+                timedOut: result.timedOut,
+                oomKilled: result.oomKilled,
+                checkpointVars: result.checkpointVars
+              });
+            } catch (err: any) {
+              sendJson(500, { success: false, error: err.message });
+            }
+          });
+          return;
+        }
 
         // 2. REST API Route: List all agents (Read)
         if (url === '/api/agents' && method === 'GET') {

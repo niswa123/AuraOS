@@ -54,9 +54,9 @@ export async function createContainer(opts: ContainerCreateOptions): Promise<Doc
       NanoCpus: Math.round(opts.cpuCores * 1e9),
       PidsLimit: opts.pidsLimit,
       ReadonlyRootfs: true,
-      Tmpfs: {
-        '/tmp': 'size=64m,mode=1777'
-      },
+      Binds: [
+        `auraos-tmp-${Math.random().toString(36).substring(2, 15)}:/tmp`
+      ],
       SecurityOpt: ['no-new-privileges'],
       ExtraHosts: ['host.docker.internal:host-gateway']
     },
