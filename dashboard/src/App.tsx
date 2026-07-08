@@ -280,17 +280,7 @@ export default function App() {
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Failed to register agent.');
       }
-
-      const newAgent: Agent = {
-        id: result.agent.id,
-        name: result.agent.name,
-        runtime: result.agent.runtime,
-        status: 'sleeping',
-        lastActive: 'never'
-      };
-
-      setAgents(prev => [...prev, newAgent]);
-      setSelectedAgentId(newAgent.id);
+      setSelectedAgentId(result.agent.id);
       
       setNewAgentName('');
       setNewAgentRuntime('python');
