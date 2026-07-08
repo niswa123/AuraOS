@@ -1,0 +1,26 @@
+{
+  "name": "auraos-runtime",
+  "version": "1.0.0",
+  "description": "AuraOS Agentic Runtime Environment Core Engine & CLI",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "migrate:up": "tsx src/core/db/migrate.ts",
+    "test:db": "tsx src/core/db/test-connection.ts"
+  },
+  "dependencies": {
+    "dockerode": "^5.0.1",
+    "dotenv": "^16.4.5",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "@types/dockerode": "^4.0.1",
+    "@types/node": "^20.14.9",
+    "@types/pg": "^8.11.6",
+    "tsx": "^4.15.7",
+    "typescript": "^5.5.2"
+  }
+}

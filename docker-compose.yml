@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: auraos-db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: auraos
+      POSTGRES_PASSWORD: auraos_dev_passwd
+      POSTGRES_DB: auraos_db
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
