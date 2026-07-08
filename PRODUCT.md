@@ -14,6 +14,17 @@ AI developers, ML engineers, autonomous system developers, and AI startup founde
 ## Product Purpose
 AuraOS is an agentic runtime environment (essentially "Docker for AI agents"). It provides a standardized, secure, isolated, and stateful container environment for executing AI agents 24/7 in production, abstracting away complex resource limits, memory orchestration, and background scheduling.
 
+## Market Landscape & Differentiators
+To ensure precise brand positioning, AuraOS must be distinguished from other global projects sharing similar names or scopes:
+- **AuraOS Agentic Runtime (This Project)**: Cloud-native execution environment for 24/7 autonomous agents using isolated WebAssembly/Docker sandboxes and PostgreSQL + pgvector for state persistence.
+- **Aura Operating System**: An educational OS kernel written in C# (SourceForge).
+- **Aura OS (Trickle Template)**: A presentation-focused frontend replicating a retro desktop in a web browser.
+- **Aura (FrontierX)**: A robotics/IoT platform utilizing local Vision-Language Models (VLM) for smart-home automation.
+- **AuraOS v3.0 (Retro)**: A sentient, gamified retro desktop environment integrating retro games like Minesweeper Oracle.
+- **AuraOS Industry 6.0**: Multi-agent orchestration engine for end-to-end fabrications.
+
+Furthermore, unlike desktop-oriented personal agent systems (such as **AgenticOS** or **Agentic OS X** built on Tauri/Electron), AuraOS is designed exclusively as a highly scalable, headless, server-side cloud infrastructure.
+
 ## Brand Personality
 - Technical, robust, premium, high-integrity.
 - 3-word personality: Cinematic, Cybernetic, Industrial-Strength.
