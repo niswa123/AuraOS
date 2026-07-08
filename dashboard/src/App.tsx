@@ -1057,7 +1057,7 @@ console.log('Output logs:', result.stdout);`;
             {/* Modal Body */}
             <div>
               <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: '1.6' }}>
-                Are you sure you want to permanently delete playground sandbox <strong style={{ color: '#fff' }}>"{agentToDelete.name}"</strong>? 
+                Are you sure you want to permanently delete playground sandbox <strong style={{ color: 'var(--color-text-primary)' }}>"{agentToDelete.name}"</strong>? 
                 This will terminate the execution session and cascade delete all metrics.
               </p>
             </div>
@@ -1078,7 +1078,7 @@ console.log('Output logs:', result.stdout);`;
                 style={{ 
                   padding: '10px 0', 
                   fontSize: '0.8rem', 
-                  color: '#fff',
+                  color: 'var(--color-text-primary)',
                   background: 'linear-gradient(135deg, #f43f5e 0%, #be123c 100%)', 
                   borderColor: 'rgba(244, 63, 94, 0.4)',
                   boxShadow: '0 0 12px rgba(244, 63, 94, 0.2)' 
@@ -1101,7 +1101,7 @@ console.log('Output logs:', result.stdout);`;
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <BookOpen style={{ width: '20px', height: '20px', color: '#10b981' }} />
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: '#fff' }}>AuraOS Documentation & Reference</h3>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>AuraOS Documentation & Reference</h3>
               </div>
               <button 
                 onClick={() => setShowDocsModal(false)}
@@ -1116,7 +1116,7 @@ console.log('Output logs:', result.stdout);`;
               
               {/* Section 1 */}
               <div>
-                <h4 style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>1. Local SDK Installation</h4>
+                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>1. Local SDK Installation</h4>
                 <p style={{ margin: '0 0 8px 0' }}>Install package locally inside your terminal from repository root:</p>
                 <pre style={{ background: 'rgba(0,0,0,0.4)', padding: '12px', borderRadius: '6px', fontFamily: 'monospace', color: 'var(--neon-teal)', border: '1px solid rgba(255,255,255,0.03)' }}>
                   pip install -e ./sdk/python
@@ -1125,7 +1125,7 @@ console.log('Output logs:', result.stdout);`;
 
               {/* Section 2 */}
               <div>
-                <h4 style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>2. SDK Sandbox Integration Code</h4>
+                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>2. SDK Sandbox Integration Code</h4>
                 <p style={{ margin: '0 0 8px 0' }}>Instantiate container sandboxes programmatically in Python:</p>
                 <pre style={{ background: 'rgba(0,0,0,0.4)', padding: '12px', borderRadius: '6px', fontFamily: 'monospace', color: 'var(--color-text-secondary)', border: '1px solid rgba(255,255,255,0.03)', overflowX: 'auto' }}>
 {`from auraos import Sandbox
@@ -1146,13 +1146,13 @@ print("Duration:", result.duration_ms, "ms")`}
 
               {/* Section 3 */}
               <div>
-                <h4 style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>3. REST API Gateway Router</h4>
+                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>3. REST API Gateway Router</h4>
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <thead>
                     <tr style={{ background: 'rgba(255,255,255,0.02)', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <th style={{ padding: '8px', fontWeight: 'bold', color: '#fff' }}>Route / Endpoint</th>
-                      <th style={{ padding: '8px', fontWeight: 'bold', color: '#fff' }}>Method</th>
-                      <th style={{ padding: '8px', fontWeight: 'bold', color: '#fff' }}>Description</th>
+                      <th style={{ padding: '8px', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>Route / Endpoint</th>
+                      <th style={{ padding: '8px', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>Method</th>
+                      <th style={{ padding: '8px', fontWeight: 'bold', color: 'var(--color-text-primary)' }}>Description</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1182,10 +1182,10 @@ print("Duration:", result.duration_ms, "ms")`}
 
               {/* Section 4 */}
               <div>
-                <h4 style={{ color: '#fff', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>4. Sandbox Security Controls</h4>
+                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>4. Sandbox Security Controls</h4>
                 <p style={{ margin: 0 }}>
                   Sandbox containers run with strict resource caps to prevent host exhaustion. The hard boundary defaults are:
-                  RAM: <strong style={{ color: '#fff' }}>128MB</strong> (swap disabled) | CPU: <strong style={{ color: '#fff' }}>0.5 core</strong> | Timeout: <strong style={{ color: '#fff' }}>15s</strong> | Network: <strong style={{ color: '#fff' }}>Egress Whitelist (port 8086)</strong>
+                  RAM: <strong style={{ color: 'var(--color-text-primary)' }}>128MB</strong> (swap disabled) | CPU: <strong style={{ color: 'var(--color-text-primary)' }}>0.5 core</strong> | Timeout: <strong style={{ color: 'var(--color-text-primary)' }}>15s</strong> | Network: <strong style={{ color: 'var(--color-text-primary)' }}>Egress Whitelist (port 8086)</strong>
                 </p>
               </div>
 
@@ -1199,8 +1199,8 @@ print("Duration:", result.duration_ms, "ms")`}
                 style={{ 
                   minWidth: '100px', 
                   padding: '8px 16px', 
-                  color: '#fff',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                  color: 'var(--color-text-primary)',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',  
                   borderColor: 'rgba(16, 185, 129, 0.4)' 
                 }}
               >

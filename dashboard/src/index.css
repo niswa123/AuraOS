@@ -112,9 +112,7 @@ body {
   font-weight: 800;
   margin: 0 0 2px 0;
   letter-spacing: -0.025em;
-  background: linear-gradient(180deg, #ffffff 0%, #a3a3a3 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--color-text-primary);
 }
 
 .header-title-text p {
