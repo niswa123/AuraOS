@@ -29,14 +29,14 @@ This document outlines the detailed development tasks required to build the Aura
 
 ---
 
-## [ ] Phase 3: Module 2 - State & Memory Engine
-- [ ] **Runtime State Serialization**
-  - [ ] Write a script execution wrapper to capture scope state variables, execution stack offsets, and log dumps.
-  - [ ] Design API JSON response structure for runtime serialization pushes.
-- [ ] **Memory Engine (`pgvector` Integration)**
-  - [ ] Set up connection to OpenAI / local embedding API (e.g., HuggingFace transformers) to convert memories to vector arrays.
-  - [ ] Implement the `memory.remember` action: store content, metadata, and embeddings to PostgreSQL.
-  - [ ] Implement the `memory.recall` action: execute cosine similarity query using `pgvector` (`<=>` operator) with variable retrieval limits.
+## [x] Phase 3: Module 2 - State & Memory Engine
+- [x] **Runtime State Serialization**
+  - [x] Write a script execution wrapper to capture scope state variables, execution stack offsets, and log dumps.
+  - [x] Design API JSON response structure for runtime serialization pushes.
+- [x] **Memory Engine (`pgvector` Integration)**
+  - [x] Set up connection to OpenAI / local embedding API (e.g., HuggingFace transformers) to convert memories to vector arrays.
+  - [x] Implement the `memory.remember` action: store content, metadata, and embeddings to PostgreSQL.
+  - [x] Implement the `memory.recall` action: execute cosine similarity query using `pgvector` (`<=>` operator) with variable retrieval limits.
 
 ---
 
