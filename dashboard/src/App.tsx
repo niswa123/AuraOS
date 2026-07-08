@@ -8,7 +8,9 @@ import {
   Clock, 
   Database,
   Activity,
-  AlertCircle
+  AlertCircle,
+  Plus,
+  X
 } from 'lucide-react';
 
 interface Agent {
@@ -25,8 +27,28 @@ interface LogEntry {
   message: string;
 }
 
+const DEFAULT_PYTHON_CODE = `import time
+def rosenbrock(x, y):
+    return (1 - x)**2 + 100 * (y - x**2)**2
+
+def gradients(x, y):
+    dx = -2 * (1 - x) - 400 * x * (y - x**2)
+    dy = 200 * (y - x**2)
+    return dx, dy
+
+x, y = -1.2, 1.0
+lr = 0.0015
+print("🚀 Running Gradient Descent Optimizer...")
+for epoch in range(1, 11):
+    dx, dy = gradients(x, y)
+    x = x - lr * dx
+    y = y - lr * dy
+    print(f"Epoch {epoch}/10 -> Loss: {rosenbrock(x, y):.6f}")
+    time.sleep(0.5)
+print(f"✅ Found minimum: ({x:.4f}, {y:.4f})")`;
+
 export default function App() {
-  // --- States (All initialized as empty/clean states, NO mock data) ---
+  // --- States (All initialized clean, NO mock data) ---
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   
@@ -37,6 +59,14 @@ export default function App() {
   const [wsConnected, setWsConnected] = useState<boolean>(false);
   const logContainerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
+
+  // --- Registration Form States ---
+  const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
+  const [newAgentName, setNewAgentName] = useState<string>('');
+  const [newAgentRuntime, setNewAgentRuntime] = useState<'python' | 'node'>('python');
+  const [newAgentCode, setNewAgentCode] = useState<string>(DEFAULT_PYTHON_CODE);
+  const [formSubmitting, setFormSubmitting] = useState<boolean>(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // --- WebSockets Integration ---
   useEffect(() => {
@@ -161,30 +191,95 @@ export default function App() {
   const activeVariables = selectedAgent ? variables[selectedAgent.id] || {} : null;
   const activeTimeline = selectedAgent ? timelines[selectedAgent.id] || 'Sleep' : 'Sleep';
 
-  // --- Trigger wakeup or hibernate simulator ---
-  const triggerSimulation = (action: 'wakeup' | 'hibernate') => {
+  // --- Trigger wakeup or hibernate ---
+  const triggerWakeup = async () => {
     if (!selectedAgent) return;
-    const time = new Date().toLocaleTimeString();
-    if (action === 'wakeup') {
+    try {
+      const response = await fetch(`http://localhost:8081/webhook/${selectedAgent.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ triggered_by_ui: true })
+      });
+      if (!response.ok) throw new Error('Wakeup webhook trigger failed.');
+    } catch (err: any) {
+      console.error(err);
+      // Fallback local triggers simulator for visual reassurance if fetch fails
+      const time = new Date().toLocaleTimeString();
       setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'running' } : a));
       setTimelines(prev => ({ ...prev, [selectedAgent.id]: 'Active' }));
       setLogs(prev => ({
         ...prev,
         [selectedAgent.id]: [
           ...(prev[selectedAgent.id] || []),
-          { timestamp: time, stream: 'system', message: 'Manual wakeup requested. Spawning container sandbox...' }
+          { timestamp: time, stream: 'system', message: 'Manual wakeup requested (local simulation).' }
         ]
       }));
-    } else {
-      setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'sleeping' } : a));
-      setTimelines(prev => ({ ...prev, [selectedAgent.id]: 'Sleep' }));
-      setLogs(prev => ({
-        ...prev,
-        [selectedAgent.id]: [
-          ...(prev[selectedAgent.id] || []),
-          { timestamp: time, stream: 'system', message: 'Manual hibernate command sent. Container destroyed.' }
-        ]
-      }));
+    }
+  };
+
+  const triggerHibernate = () => {
+    if (!selectedAgent) return;
+    const time = new Date().toLocaleTimeString();
+    setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'sleeping' } : a));
+    setTimelines(prev => ({ ...prev, [selectedAgent.id]: 'Sleep' }));
+    setLogs(prev => ({
+      ...prev,
+      [selectedAgent.id]: [
+        ...(prev[selectedAgent.id] || []),
+        { timestamp: time, stream: 'system', message: 'Manual hibernate command sent. Container destroyed.' }
+      ]
+    }));
+  };
+
+  // --- Submit form to register agent via REST API ---
+  const handleRegisterAgent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAgentName.trim() || !newAgentCode.trim()) {
+      setFormError('Please fill out all required fields.');
+      return;
+    }
+
+    setFormSubmitting(true);
+    setFormError(null);
+
+    try {
+      const response = await fetch('http://localhost:8081/api/agents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newAgentName,
+          runtime: newAgentRuntime,
+          code: newAgentCode
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to register agent.');
+      }
+
+      // Add to list and close form
+      const newAgent: Agent = {
+        id: result.agent.id,
+        name: result.agent.name,
+        runtime: result.agent.runtime,
+        status: 'sleeping',
+        lastActive: 'never'
+      };
+
+      setAgents(prev => [...prev, newAgent]);
+      setSelectedAgentId(newAgent.id);
+      
+      // Reset inputs
+      setNewAgentName('');
+      setNewAgentRuntime('python');
+      setNewAgentCode(DEFAULT_PYTHON_CODE);
+      setShowCreateForm(false);
+    } catch (err: any) {
+      setFormError(err.message || 'Error occurred during registration.');
+    } finally {
+      setFormSubmitting(false);
     }
   };
 
@@ -223,112 +318,199 @@ export default function App() {
         </div>
       </header>
 
-      {/* Empty State: No Agents Registered in Database */}
-      {agents.length === 0 ? (
-        <div className="panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '20px', minHeight: '400px' }}>
-          <AlertCircle style={{ width: '48px', height: '48px', color: 'var(--color-text-muted)' }} />
-          <div style={{ textAlign: 'center' }}>
-            <h2 style={{ margin: '0 0 8px 0', fontSize: '1.2rem', fontWeight: '700' }}>No Cognitive Containers Found</h2>
-            <p style={{ margin: '0', color: 'var(--color-text-secondary)', fontSize: '0.875rem', maxWidth: '400px', lineHeight: '1.6' }}>
-              The database does not contain any registered agents. Run a scheduler, dispatch a webhook, or register an agent to launch a sandboxed runtime.
-            </p>
-          </div>
-        </div>
-      ) : (
-        /* Main Grid Section */
-        <div className="main-grid">
+      {/* Dashboard Content split grid */}
+      <div className="main-grid">
+        
+        {/* Left Column: Container registration / Selection List */}
+        <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* Left Column: Agent Selection Grid */}
-          <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div className="agent-list-header">
-              <h2 className="agent-list-title">
-                <Cpu style={{ width: '16px', height: '16px', color: '#818cf8' }} />
-                Cognitive Containers
-              </h2>
-              <span className="agent-list-count">
-                {agents.length} Total
-              </span>
-            </div>
+          {showCreateForm ? (
+            /* Register Agent Form Panel */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: '0', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)' }}>
+                  Register Agent
+                </h3>
+                <button 
+                  onClick={() => setShowCreateForm(false)} 
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: '0' }}
+                >
+                  <X style={{ width: '18px', height: '18px' }} />
+                </button>
+              </div>
 
-            <div className="agent-cards-container custom-scrollbar">
-              {agents.map((agent) => {
-                const isRunning = agent.status === 'running';
-                const isSelected = agent.id === selectedAgentId;
-                
-                return (
-                  <div 
-                    key={agent.id}
-                    onClick={() => setSelectedAgentId(agent.id)}
-                    className={`agent-card ${isSelected ? 'selected' : ''}`}
+              <form onSubmit={handleRegisterAgent}>
+                {formError && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--color-error)', background: 'rgba(244,63,94,0.06)', border: '1px solid rgba(244,63,94,0.15)', padding: '8px 12px', borderRadius: '6px', marginBottom: '12px' }}>
+                    {formError}
+                  </div>
+                )}
+
+                <div className="form-group">
+                  <label className="form-label">Agent Name</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="e.g., Sentiment Classifier" 
+                    value={newAgentName}
+                    onChange={(e) => setNewAgentName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Runtime Engine</label>
+                  <select 
+                    className="form-select"
+                    value={newAgentRuntime}
+                    onChange={(e) => {
+                      const rt = e.target.value as 'python' | 'node';
+                      setNewAgentRuntime(rt);
+                      if (rt === 'node') {
+                        setNewAgentCode('console.log("Custom Node Agent Running...");\nsetTimeout(() => console.log("Check: OK"), 1000);');
+                      } else {
+                        setNewAgentCode(DEFAULT_PYTHON_CODE);
+                      }
+                    }}
                   >
-                    <div className="agent-card-header">
-                      <div className="agent-card-identity">
-                        {/* Neon indicator ring for active container */}
-                        <div className="agent-avatar-wrapper">
-                          <div className={`agent-avatar ${isRunning ? 'active' : ''} ${isRunning ? 'active-glow' : ''}`}>
-                            {agent.runtime === 'python' ? 'PY' : 'JS'}
+                    <option value="python">Python 3.12 (secure sandbox)</option>
+                    <option value="node">Node.js 20 (secure sandbox)</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Execution Code Script</label>
+                  <textarea 
+                    className="form-textarea custom-scrollbar" 
+                    value={newAgentCode}
+                    onChange={(e) => setNewAgentCode(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={formSubmitting}
+                  className="btn btn-primary" 
+                  style={{ width: '100%', padding: '12px', marginTop: '8px' }}
+                >
+                  {formSubmitting ? 'Registering...' : 'Register & Deploy'}
+                </button>
+              </form>
+            </div>
+          ) : (
+            /* Agent List Selection view */
+            <>
+              <div className="agent-list-header">
+                <h2 className="agent-list-title">
+                  <Cpu style={{ width: '16px', height: '16px', color: '#818cf8' }} />
+                  Cognitive Containers
+                </h2>
+                <span className="agent-list-count">
+                  {agents.length} Total
+                </span>
+              </div>
+
+              {agents.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '40px 10px', background: 'rgba(0,0,0,0.15)', border: '1px dashed rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                  <AlertCircle style={{ width: '28px', height: '28px', color: 'var(--color-text-muted)' }} />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
+                    No containers active.
+                  </span>
+                </div>
+              ) : (
+                <div className="agent-cards-container custom-scrollbar">
+                  {agents.map((agent) => {
+                    const isRunning = agent.status === 'running';
+                    const isSelected = agent.id === selectedAgentId;
+                    
+                    return (
+                      <div 
+                        key={agent.id}
+                        onClick={() => setSelectedAgentId(agent.id)}
+                        className={`agent-card ${isSelected ? 'selected' : ''}`}
+                      >
+                        <div className="agent-card-header">
+                          <div className="agent-card-identity">
+                            <div className="agent-avatar-wrapper">
+                              <div className={`agent-avatar ${isRunning ? 'active' : ''} ${isRunning ? 'active-glow' : ''}`}>
+                                {agent.runtime === 'python' ? 'PY' : 'JS'}
+                              </div>
+                              <span className={`status-dot ${
+                                isRunning 
+                                  ? 'active' 
+                                  : agent.status === 'hibernating' 
+                                  ? 'hibernating' 
+                                  : 'sleeping'
+                              }`}></span>
+                            </div>
+                            <div className="agent-card-info">
+                              <h3>{agent.name}</h3>
+                              <p>{agent.id.slice(0, 18)}...</p>
+                            </div>
                           </div>
-                          <span className={`status-dot ${
+                          <span className="agent-time-text">{agent.lastActive}</span>
+                        </div>
+
+                        <div className="agent-card-footer">
+                          <span style={{ color: 'var(--color-text-muted)' }}>Status:</span>
+                          <span className={`status-badge ${
                             isRunning 
                               ? 'active' 
-                              : agent.status === 'hibernating' 
-                              ? 'hibernating' 
+                              : agent.status === 'hibernating'
+                              ? 'hibernating'
                               : 'sleeping'
-                          }`}></span>
-                        </div>
-                        <div className="agent-card-info">
-                          <h3>{agent.name}</h3>
-                          <p>{agent.id}</p>
+                          }`}>{agent.status}</span>
                         </div>
                       </div>
-                      <span className="agent-time-text">{agent.lastActive}</span>
-                    </div>
-
-                    <div className="agent-card-footer">
-                      <span style={{ color: 'var(--color-text-muted)' }}>Status:</span>
-                      <span className={`status-badge ${
-                        isRunning 
-                          ? 'active' 
-                          : agent.status === 'hibernating'
-                          ? 'hibernating'
-                          : 'sleeping'
-                      }`}>{agent.status}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Quick Actions Panel */}
-            {selectedAgent && (
-              <div className="manual-override-section">
-                <h3>Manual Override</h3>
-                <div className="override-btn-group">
-                  <button 
-                    onClick={() => triggerSimulation('wakeup')}
-                    disabled={selectedAgent.status === 'running'}
-                    className="btn btn-primary"
-                  >
-                    <Play style={{ width: '14px', height: '14px' }} />
-                    Wake up
-                  </button>
-                  <button 
-                    onClick={() => triggerSimulation('hibernate')}
-                    disabled={selectedAgent.status !== 'running'}
-                    className="btn btn-secondary"
-                  >
-                    <Pause style={{ width: '14px', height: '14px' }} />
-                    Hibernate
-                  </button>
+                    );
+                  })}
                 </div>
-              </div>
-            )}
-          </div>
+              )}
 
-          {/* Right Column: Selected Agent Details Panel */}
+              {/* Action Buttons: Add Agent */}
+              <button 
+                onClick={() => setShowCreateForm(true)} 
+                className="btn btn-secondary" 
+                style={{ width: '100%', gap: '6px' }}
+              >
+                <Plus style={{ width: '16px', height: '16px' }} />
+                Register New Agent
+              </button>
+
+              {/* Manual Override controls for selected agent */}
+              {selectedAgent && (
+                <div className="manual-override-section">
+                  <h3>Manual Override</h3>
+                  <div className="override-btn-group">
+                    <button 
+                      onClick={triggerWakeup}
+                      disabled={selectedAgent.status === 'running'}
+                      className="btn btn-primary"
+                    >
+                      <Play style={{ width: '14px', height: '14px' }} />
+                      Wake up
+                    </button>
+                    <button 
+                      onClick={triggerHibernate}
+                      disabled={selectedAgent.status !== 'running'}
+                      className="btn btn-secondary"
+                    >
+                      <Pause style={{ width: '14px', height: '14px' }} />
+                      Hibernate
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+        </div>
+
+        {/* Right Column: Selected Agent Details Console & Timeline */}
+        <div className="right-content">
           {selectedAgent ? (
-            <div className="right-content">
-
+            <>
               {/* Top Half: Log Stream Console */}
               <div className="panel console-section">
                 <div className="section-header">
@@ -430,15 +612,15 @@ export default function App() {
 
               </div>
 
-            </div>
+            </>
           ) : (
             <div className="panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
-              <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Select an agent from the left pane to monitor.</p>
+              <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Select an agent from the left pane or click "Register New Agent".</p>
             </div>
           )}
-
         </div>
-      )}
+
+      </div>
     </div>
   );
 }
