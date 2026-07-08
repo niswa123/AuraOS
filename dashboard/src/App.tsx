@@ -41,7 +41,7 @@ interface BillingStats {
 
 const DEFAULT_PYTHON_CODE = `import time
 # AuraOS Intermediate Checkpoint Demonstration Script
-print("🚀 Execution cycle active inside secure Docker sandbox...")
+print("Execution cycle active inside secure Docker sandbox...")
 
 # 1. Simulate process computation
 time.sleep(1)
@@ -50,11 +50,11 @@ time.sleep(1)
 checkpoint_data = '{"last_iteration": 42, "computed_value": 98.76, "status": "in_progress"}'
 with open("/tmp/state_checkpoint.json", "w") as f:
     f.write(checkpoint_data)
-print("💾 Intermediate state checkpoint written to /tmp/state_checkpoint.json")
+print("Intermediate state checkpoint written to /tmp/state_checkpoint.json")
 
 # 3. Simulate remaining work
 time.sleep(1)
-print("✅ Sandbox execution complete. Initiating graceful teardown...")`;
+print("Sandbox execution complete. Initiating graceful teardown...")`;
 
 export default function App() {
   // --- States ---
@@ -1152,19 +1152,19 @@ console.log('Output logs:', result.stdout);`;
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
                   <div style={{ fontSize: '0.75rem', lineHeight: '1.5' }}>
-                    <strong style={{ color: 'var(--neon-teal)' }}>🛡️ Moat 1: AuraFS (Discrete SQLite VFS)</strong>
+                    <strong style={{ color: 'var(--neon-teal)' }}>Moat 1: AuraFS (Discrete SQLite VFS)</strong>
                     <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-secondary)' }}>
                       SQLite-backed virtual filesystem stored in tmpfs (RAM) per sandbox session. Allows instant tree-of-thought branching (&lt; 1ms) and logging of file audit events (size, operations, diffs) under 2ms.
                     </p>
                   </div>
                   <div style={{ fontSize: '0.75rem', lineHeight: '1.5', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px' }}>
-                    <strong style={{ color: 'var(--neon-teal)' }}>⚡ Moat 2: Zero-KVM WarmPool (Cgroups Freezer)</strong>
+                    <strong style={{ color: 'var(--neon-teal)' }}>Moat 2: Zero-KVM WarmPool (Cgroups Freezer)</strong>
                     <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-secondary)' }}>
                       Maintains pre-warmed running containers. Suspends processes via Docker cgroups Freezer API (0% CPU cost) during sleep, keeping TCP sockets alive and thawing containers instantly in &lt; 15ms.
                     </p>
                   </div>
                   <div style={{ fontSize: '0.75rem', lineHeight: '1.5', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px' }}>
-                    <strong style={{ color: 'var(--neon-teal)' }}>👁️ Moat 3: Cognitive Egress (Semantic Firewall)</strong>
+                    <strong style={{ color: 'var(--neon-teal)' }}>Moat 3: Cognitive Egress (Semantic Firewall)</strong>
                     <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-secondary)' }}>
                       Intercepts and decrypts outgoing TLS payloads on Port 8086. Runs real-time vector checks using pgvector cosine similarity to detect and block credentials/secrets leakage with &lt; 5ms cache overhead.
                     </p>
