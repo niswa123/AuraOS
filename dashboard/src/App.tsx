@@ -175,59 +175,56 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen relative p-6 flex flex-col gap-6 overflow-hidden">
+    <div className="dashboard-wrapper">
       {/* Background Ambience */}
       <div className="ambient-glow" style={{ top: '-10%', left: '10%' }}></div>
-      <div className="ambient-glow" style={{ bottom: '-15%', right: '10%', background: 'radial-gradient(circle, rgba(20, 184, 166, 0.04) 0%, transparent 70%)' }}></div>
+      <div className="ambient-glow" style={{ bottom: '-15%', right: '10%', background: 'radial-gradient(circle, rgba(45, 212, 191, 0.04) 0%, transparent 70%)' }}></div>
 
       {/* Header */}
-      <header className="glass-panel p-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-lg bg-indigo-600/10 border border-indigo-500/20 text-indigo-400">
-            <Layers className="w-6 h-6" />
+      <header className="panel header-container">
+        <div className="header-logo-group">
+          <div className="header-icon">
+            <Layers style={{ width: '24px', height: '24px' }} />
           </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-neutral-200 to-neutral-400 bg-clip-text text-transparent">AuraOS Control Center</h1>
-            <p className="text-xs text-neutral-400">Agentic runtime environment & sandbox supervisor</p>
+          <div className="header-title-text">
+            <h1>AuraOS Control Center</h1>
+            <p>Agentic runtime environment & sandbox supervisor</p>
           </div>
         </div>
 
         {/* Live status indicators */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-neutral-900 border border-neutral-800 text-xs">
-            <Activity className="w-4 h-4 text-emerald-400" />
-            <span>Database:</span>
-            <span className="font-semibold text-emerald-400">Connected</span>
+        <div className="status-badge-group">
+          <div className="badge">
+            <Activity style={{ width: '16px', height: '16px', color: '#10b981' }} />
+            <span>Database: Connected</span>
           </div>
 
-          <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-xs transition-all ${
-            wsConnected 
-              ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-400' 
-              : 'bg-yellow-950/20 border-yellow-500/30 text-yellow-400'
-          }`}>
-            <span className={`w-2.5 h-2.5 rounded-full ${wsConnected ? 'bg-emerald-400 active-ring' : 'bg-yellow-400 animate-pulse'}`}></span>
-            <span>Live Stream:</span>
-            <span className="font-semibold">{wsConnected ? 'Connected' : 'Offline (Polling)'}</span>
+          <div className="badge">
+            <span 
+              className={`status-dot ${wsConnected ? 'active' : 'sleeping'}`} 
+              style={{ position: 'relative', border: 'none', width: '8px', height: '8px' }}
+            ></span>
+            <span>Live Stream: {wsConnected ? 'Connected' : 'Offline'}</span>
           </div>
         </div>
       </header>
 
       {/* Main Grid Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+      <div className="main-grid">
         
         {/* Left Column: Agent Selection Grid */}
-        <div className="glass-panel p-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-indigo-400" />
+        <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="agent-list-header">
+            <h2 className="agent-list-title">
+              <Cpu style={{ width: '16px', height: '16px', color: '#818cf8' }} />
               Cognitive Containers
             </h2>
-            <span className="text-xs px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 font-mono text-neutral-400">
+            <span className="agent-list-count">
               {agents.length} Total
             </span>
           </div>
 
-          <div className="flex flex-col gap-3 overflow-y-auto max-h-[500px] pr-1 custom-scrollbar">
+          <div className="agent-cards-container custom-scrollbar">
             {agents.map((agent) => {
               const isRunning = agent.status === 'running';
               const isSelected = agent.id === selectedAgentId;
@@ -236,47 +233,39 @@ export default function App() {
                 <div 
                   key={agent.id}
                   onClick={() => setSelectedAgentId(agent.id)}
-                  className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                    isSelected 
-                      ? 'bg-neutral-800/40 border-indigo-500/40 shadow-[0_0_15px_rgba(79,70,229,0.1)]' 
-                      : 'bg-neutral-900/20 border-neutral-800/50 hover:bg-neutral-800/20'
-                  }`}
+                  className={`agent-card ${isSelected ? 'selected' : ''}`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                  <div className="agent-card-header">
+                    <div className="agent-card-identity">
                       {/* Neon indicator ring for active container */}
-                      <div className="relative">
-                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold ${
-                          isRunning 
-                            ? 'bg-teal-500/10 text-teal-400 border border-teal-500/30' 
-                            : 'bg-neutral-800 text-neutral-400 border border-neutral-700/50'
-                        }`}>
+                      <div className="agent-avatar-wrapper">
+                        <div className={`agent-avatar ${isRunning ? 'active' : ''} ${isRunning ? 'active-glow' : ''}`}>
                           {agent.runtime === 'python' ? 'PY' : 'JS'}
                         </div>
-                        <span className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-neutral-950 ${
+                        <span className={`status-dot ${
                           isRunning 
-                            ? 'bg-teal-400 active-ring' 
+                            ? 'active' 
                             : agent.status === 'hibernating' 
-                            ? 'bg-amber-400' 
-                            : 'bg-neutral-500'
+                            ? 'hibernating' 
+                            : 'sleeping'
                         }`}></span>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-sm text-neutral-100">{agent.name}</h3>
-                        <p className="text-xs text-neutral-400 font-mono">{agent.id}</p>
+                      <div className="agent-card-info">
+                        <h3>{agent.name}</h3>
+                        <p>{agent.id}</p>
                       </div>
                     </div>
-                    <span className="text-[10px] text-neutral-500">{agent.lastActive}</span>
+                    <span className="agent-time-text">{agent.lastActive}</span>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between text-xs pt-3 border-t border-neutral-800/30">
-                    <span className="text-neutral-500">Status:</span>
-                    <span className={`font-semibold capitalize px-2 py-0.5 rounded text-[10px] ${
+                  <div className="agent-card-footer">
+                    <span style={{ color: 'var(--color-text-muted)' }}>Status:</span>
+                    <span className={`status-badge ${
                       isRunning 
-                        ? 'bg-teal-950/30 text-teal-400 border border-teal-500/20' 
+                        ? 'active' 
                         : agent.status === 'hibernating'
-                        ? 'bg-amber-950/30 text-amber-400 border border-amber-500/20'
-                        : 'bg-neutral-900 text-neutral-400 border border-neutral-800'
+                        ? 'hibernating'
+                        : 'sleeping'
                     }`}>{agent.status}</span>
                   </div>
                 </div>
@@ -285,66 +274,61 @@ export default function App() {
           </div>
 
           {/* Quick Actions Panel */}
-          <div className="mt-auto pt-4 border-t border-neutral-800/50">
-            <h3 className="text-xs font-semibold uppercase text-neutral-500 mb-3">Manual Override</h3>
-            <div className="grid grid-cols-2 gap-3">
+          <div className="manual-override-section">
+            <h3>Manual Override</h3>
+            <div className="override-btn-group">
               <button 
                 onClick={() => triggerSimulation('wakeup')}
                 disabled={selectedAgent.status === 'running'}
-                className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-teal-600/10 hover:bg-teal-600/20 border border-teal-500/20 hover:border-teal-500/40 text-teal-400 text-xs font-medium transition-all disabled:opacity-50"
+                className="btn btn-primary"
               >
-                <Play className="w-3.5 h-3.5" />
+                <Play style={{ width: '14px', height: '14px' }} />
                 Wake up
               </button>
               <button 
                 onClick={() => triggerSimulation('hibernate')}
                 disabled={selectedAgent.status !== 'running'}
-                className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 border border-neutral-700 text-neutral-300 text-xs font-medium transition-all disabled:opacity-50"
+                className="btn btn-secondary"
               >
-                <Pause className="w-3.5 h-3.5" />
+                <Pause style={{ width: '14px', height: '14px' }} />
                 Hibernate
               </button>
             </div>
           </div>
         </div>
 
-        {/* Center & Right Column Layout */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
+        {/* Right Content Area */}
+        <div className="right-content">
 
           {/* Top Half: Log Stream Console */}
-          <div className="glass-panel p-6 flex flex-col gap-3 flex-1 min-h-[300px]">
-            <div className="flex items-center justify-between border-b border-neutral-800/60 pb-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-400 flex items-center gap-2">
-                <Terminal className="w-4 h-4 text-indigo-400" />
+          <div className="panel console-section">
+            <div className="section-header">
+              <h2 className="section-title">
+                <Terminal style={{ width: '16px', height: '16px', color: '#818cf8' }} />
                 Console Log Stream
               </h2>
-              <span className="text-[11px] font-mono text-neutral-500">
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>
                 Watching: {selectedAgent.name}
               </span>
             </div>
 
-            <div 
-              ref={logContainerRef}
-              className="flex-1 bg-black/40 border border-neutral-900/80 rounded-lg p-4 console-font overflow-y-auto max-h-[250px] custom-scrollbar"
-            >
+            <div className="console-container custom-scrollbar" ref={logContainerRef}>
               {activeLogs.length === 0 ? (
-                <div className="text-neutral-500 italic">No output logs recorded for this agent.</div>
+                <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No output logs recorded for this agent.</div>
               ) : (
                 activeLogs.map((log, index) => {
-                  let colorClass = 'text-neutral-300';
+                  let msgClass = 'log-msg-stdout';
                   if (log.stream === 'stderr' || log.message.toLowerCase().includes('error')) {
-                    colorClass = 'text-rose-400 font-semibold';
-                  } else if (log.message.toLowerCase().includes('warning') || log.message.toLowerCase().includes('timed out')) {
-                    colorClass = 'text-amber-400';
+                    msgClass = 'log-msg-stderr';
                   } else if (log.stream === 'system') {
-                    colorClass = 'text-indigo-400';
+                    msgClass = 'log-msg-system';
                   }
 
                   return (
-                    <div key={index} className="mb-2 flex items-start gap-3">
-                      <span className="text-neutral-600 select-none">[{log.timestamp}]</span>
-                      <span className="text-neutral-500 font-semibold select-none">[{log.stream}]</span>
-                      <span className={colorClass}>{log.message}</span>
+                    <div key={index} className="log-line">
+                      <span className="log-time">[{log.timestamp}]</span>
+                      <span className="log-stream">[{log.stream}]</span>
+                      <span className={msgClass}>{log.message}</span>
                     </div>
                   );
                 })
@@ -353,32 +337,30 @@ export default function App() {
           </div>
 
           {/* Bottom Half: JSON inspector and Interactive Timeline */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bottom-split-grid">
             
             {/* JSON State Inspector */}
-            <div className="glass-panel p-6 flex flex-col gap-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-400 flex items-center gap-2 border-b border-neutral-800/60 pb-3">
-                <Database className="w-4 h-4 text-indigo-400" />
+            <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h2 className="section-title" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '12px', margin: '0' }}>
+                <Database style={{ width: '16px', height: '16px', color: '#818cf8' }} />
                 Variable Inspector
               </h2>
-              <div className="flex-1 bg-black/30 rounded-lg p-4 border border-neutral-900/60 overflow-y-auto max-h-[200px] console-font custom-scrollbar">
-                <pre className="text-xs text-indigo-300">
-                  {JSON.stringify(activeVariables, null, 2)}
-                </pre>
-              </div>
+              <pre className="inspector-pre custom-scrollbar">
+                {JSON.stringify(activeVariables, null, 2)}
+              </pre>
             </div>
 
             {/* Interactive Timeline */}
-            <div className="glass-panel p-6 flex flex-col gap-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-400 flex items-center gap-2 border-b border-neutral-800/60 pb-3">
-                <Clock className="w-4 h-4 text-indigo-400" />
+            <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <h2 className="section-title" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '12px', margin: '0' }}>
+                <Clock style={{ width: '16px', height: '16px', color: '#818cf8' }} />
                 Chronos State Transitions
               </h2>
               
-              <div className="flex-1 flex flex-col justify-center gap-6 py-2">
+              <div style={{ flex: '1', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '16px' }}>
                 {/* Horizontal progress visualization */}
-                <div className="relative flex items-center justify-between w-full">
-                  <div className="absolute left-0 right-0 h-0.5 bg-neutral-800 -z-10"></div>
+                <div className="timeline-flex">
+                  <div className="timeline-line"></div>
                   
                   {/* Stages */}
                   {['Trigger', 'Active', 'Hibernate', 'Sleep'].map((stage, idx) => {
@@ -388,19 +370,11 @@ export default function App() {
                     const isCurrent = activeTimeline === stage;
 
                     return (
-                      <div key={stage} className="flex flex-col items-center gap-2">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                          isCurrent 
-                            ? 'bg-indigo-600 text-white border border-indigo-400 shadow-[0_0_12px_var(--accent-glow)]' 
-                            : isCompleted
-                            ? 'bg-neutral-800 text-indigo-400 border border-indigo-500/20'
-                            : 'bg-neutral-900 text-neutral-600 border border-neutral-800'
-                        }`}>
+                      <div key={stage} className={`timeline-step ${isCurrent ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}>
+                        <div className="timeline-dot">
                           {idx + 1}
                         </div>
-                        <span className={`text-[10px] font-semibold tracking-wide uppercase ${
-                          isCurrent ? 'text-indigo-400' : 'text-neutral-500'
-                        }`}>
+                        <span className="timeline-label">
                           {stage}
                         </span>
                       </div>
@@ -408,7 +382,7 @@ export default function App() {
                   })}
                 </div>
 
-                <div className="text-xs text-neutral-400 text-center italic mt-2">
+                <div className="timeline-info-text">
                   {activeTimeline === 'Sleep' && 'Agent context is serialized on disk. 0% CPU consumption.'}
                   {activeTimeline === 'Active' && 'Agent running dynamically inside isolated container sandbox.'}
                   {activeTimeline === 'Hibernate' && 'Graceful teardown initiated. Context variables stored.'}
