@@ -157,8 +157,13 @@ export default function App() {
           }
           setAgents(prev => {
             const exists = prev.some(a => a.id === agentId);
+            const nextLastActive = payload.status === 'running' 
+              ? 'Active now' 
+              : payload.status === 'hibernating' 
+              ? 'Sleeping' 
+              : 'Idle';
             if (exists) {
-              return prev.map(a => a.id === agentId ? { ...a, status: payload.status, lastActive: 'Active now' } : a);
+              return prev.map(a => a.id === agentId ? { ...a, status: payload.status, lastActive: nextLastActive } : a);
             } else {
               return [
                 ...prev,
@@ -167,7 +172,7 @@ export default function App() {
                   name: (payload.name as string) || 'Dynamic Container',
                   runtime: (payload.runtime as 'python' | 'node') || 'python',
                   status: payload.status as Agent['status'],
-                  lastActive: 'Active now'
+                  lastActive: nextLastActive
                 }
               ];
             }
@@ -245,7 +250,7 @@ export default function App() {
     } catch (err: any) {
       console.error(err);
       const time = new Date().toLocaleTimeString();
-      setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'running' } : a));
+      setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'running', lastActive: 'Active now' } : a));
       setLogs(prev => ({
         ...prev,
         [selectedAgent.id]: [
@@ -259,7 +264,7 @@ export default function App() {
   const triggerHibernate = () => {
     if (!selectedAgent) return;
     const time = new Date().toLocaleTimeString();
-    setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'sleeping' } : a));
+    setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'sleeping', lastActive: 'Idle' } : a));
     setLogs(prev => ({
       ...prev,
       [selectedAgent.id]: [
@@ -642,7 +647,7 @@ console.log('Output logs:', result.stdout);`;
                   Playground Sandboxes
                 </h2>
                 <span className="agent-list-count">
-                  {agents.length} Active
+                  {agents.length} Registered
                 </span>
               </div>
 
@@ -722,6 +727,18 @@ console.log('Output logs:', result.stdout);`;
                       onClick={triggerWakeup}
                       disabled={selectedAgent.status === 'running'}
                       className="btn btn-primary"
+                      style={selectedAgent.status !== 'running' ? {
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        borderColor: 'rgba(16, 185, 129, 0.4)',
+                        color: 'var(--color-text-primary)',
+                        boxShadow: '0 0 12px rgba(16, 185, 129, 0.15)'
+                      } : {
+                        background: 'rgba(255,255,255,0.03)',
+                        borderColor: 'rgba(255,255,255,0.04)',
+                        color: 'var(--color-text-muted)',
+                        cursor: 'not-allowed',
+                        boxShadow: 'none'
+                      }}
                     >
                       <Play style={{ width: '14px', height: '14px' }} />
                       Wake up
@@ -730,6 +747,19 @@ console.log('Output logs:', result.stdout);`;
                       onClick={triggerHibernate}
                       disabled={selectedAgent.status !== 'running'}
                       className="btn btn-secondary"
+                      style={selectedAgent.status === 'running' ? {
+                        background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)',
+                        borderColor: 'rgba(251, 191, 36, 0.4)',
+                        color: '#050506',
+                        boxShadow: '0 0 12px rgba(251, 191, 36, 0.15)',
+                        fontWeight: '600'
+                      } : {
+                        background: 'rgba(255,255,255,0.03)',
+                        borderColor: 'rgba(255,255,255,0.04)',
+                        color: 'var(--color-text-muted)',
+                        cursor: 'not-allowed',
+                        boxShadow: 'none'
+                      }}
                     >
                       <Pause style={{ width: '14px', height: '14px' }} />
                       Hibernate
@@ -981,8 +1011,8 @@ console.log('Output logs:', result.stdout);`;
 
             {/* SDK setup block */}
             {(() => {
-              const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-              const pipCommand = isDev ? 'pip install -e ./sdk/python' : 'pip install auraos';
+              const isProd = import.meta.env.PROD || import.meta.env.MODE === 'production';
+              const pipCommand = isProd ? 'pip install auraos' : 'pip install -e ./sdk/python';
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <label className="form-label">Install SDK Packages</label>
