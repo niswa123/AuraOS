@@ -44,6 +44,14 @@ CREATE TABLE IF NOT EXISTS vector_memories (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Table for storing compromised secret vectors for the Cognitive Egress Safeguard (Semantic Firewall)
+CREATE TABLE IF NOT EXISTS compromised_secret_vectors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  secret_text TEXT NOT NULL,
+  embedding vector(1536) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- Indexes for performance optimizing queries
 CREATE INDEX IF NOT EXISTS idx_executions_agent_id ON executions(agent_id);
 CREATE INDEX IF NOT EXISTS idx_states_agent_id ON states(agent_id);
@@ -51,3 +59,4 @@ CREATE INDEX IF NOT EXISTS idx_vector_memories_agent_id ON vector_memories(agent
 
 -- HNSW Vector Index for efficient Cosine Similarity Search
 CREATE INDEX IF NOT EXISTS vector_memories_embedding_hnsw_idx ON vector_memories USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS compromised_secrets_embedding_hnsw_idx ON compromised_secret_vectors USING hnsw (embedding vector_cosine_ops);

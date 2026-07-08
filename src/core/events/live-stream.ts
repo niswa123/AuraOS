@@ -8,7 +8,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { db } from '../db/client.js';
 
 export interface LiveEvent {
-  type: 'status_change' | 'log' | 'state_change' | 'timeline_transition' | 'init_agents' | 'agent_details';
+  type: 'status_change' | 'log' | 'state_change' | 'timeline_transition' | 'init_agents' | 'agent_details' | 'billing_metrics';
   agentId: string;
   timestamp: string;
   payload: Record<string, unknown>;
@@ -214,6 +214,18 @@ class LiveStreamBroadcaster {
       agentId,
       timestamp: new Date().toISOString(),
       payload: { stage }
+    });
+  }
+
+  /**
+   * Broadcast real-time execution usage and billing metrics.
+   */
+  sendBillingMetrics(agentId: string, durationMs: number, ramAllocatedMb: number, costUsd: number) {
+    this.broadcast({
+      type: 'billing_metrics',
+      agentId,
+      timestamp: new Date().toISOString(),
+      payload: { durationMs, ramAllocatedMb, costUsd }
     });
   }
 

@@ -12,13 +12,15 @@
     "test:db": "tsx src/core/db/test-connection.ts",
     "test:unit": "tsx tests/unit/test-types-and-limits.ts",
     "test:integration": "tsx tests/integration/test-api-and-ws.ts",
-    "test": "npm run test:unit && npm run test:integration"
+    "test:moats": "tsx src/core/sandbox/test-moats.ts",
+    "test": "npm run test:unit && npm run test:integration && npm run test:moats"
   },
   "dependencies": {
     "dockerode": "^5.0.1",
     "dotenv": "^16.4.5",
     "node-cron": "^4.6.0",
     "pg": "^8.12.0",
+    "sqlite3": "^6.0.1",
     "ws": "^8.21.0"
   },
   "devDependencies": {
@@ -26,6 +28,7 @@
     "@types/node": "^20.14.9",
     "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.11.6",
+    "@types/sqlite3": "^3.1.11",
     "@types/ws": "^8.18.1",
     "tsx": "^4.15.7",
     "typescript": "^5.5.2"

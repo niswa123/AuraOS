@@ -16,6 +16,7 @@ import type { SandboxConfig, ExecutionResult, ResourceLimits } from './types.js'
 import { DEFAULT_LIMITS, MAX_LIMITS } from './types.js';
 import { execSync } from 'child_process';
 import fs from 'fs';
+import { AuraFSService } from './aura-fs.js';
 
 const RUNTIME_IMAGES: Record<string, string> = {
   python: 'auraos-python-runner',
@@ -119,19 +120,40 @@ export async function executeInSandbox(config: SandboxConfig): Promise<Execution
     clearTimeout(timeoutHandle);
   }
 
-  // Attempt to recover state checkpoints from /tmp/state_checkpoint.json inside the stopped container
+  // Attempt to recover state checkpoints from the SQLite-backed AuraFS database inside the stopped container
   let checkpointVars: any = undefined;
-  const tempCheckpointFile = `/tmp/checkpoint_${config.executionId}.json`;
+  const targetDbPath = `/tmp/aurafs_${config.executionId}.db`;
   try {
-    execSync(`docker cp ${containerId}:/tmp/state_checkpoint.json ${tempCheckpointFile}`, { stdio: 'ignore' });
-    if (fs.existsSync(tempCheckpointFile)) {
-      const raw = fs.readFileSync(tempCheckpointFile, 'utf8');
-      checkpointVars = JSON.parse(raw);
-      console.log(`[AuraOS Sandbox] Recovered checkpoint state variables from sandbox:`, checkpointVars);
-      fs.unlinkSync(tempCheckpointFile);
+    // 1. Try AuraFS SQLite recovery first
+    execSync(`docker cp ${containerId}:/tmp/agent_workspace.db ${targetDbPath}`, { stdio: 'ignore' });
+    if (fs.existsSync(targetDbPath)) {
+      const auraFS = new AuraFSService(config.executionId);
+      await auraFS.init();
+      const content = await auraFS.readFile('/tmp/state_checkpoint.json');
+      if (content) {
+        checkpointVars = JSON.parse(content.toString('utf8'));
+        console.log(`[AuraOS Sandbox] Recovered checkpoint state variables via AuraFS SQL:`, checkpointVars);
+      }
+      await auraFS.destroy();
     }
   } catch (err) {
-    // No checkpoint written or container failed before write
+    // Silent skip for AuraFS
+  }
+
+  // 2. Fallback to direct file copy to support legacy integration tests
+  if (!checkpointVars) {
+    const tempCheckpointFile = `/tmp/checkpoint_${config.executionId}.json`;
+    try {
+      execSync(`docker cp ${containerId}:/tmp/state_checkpoint.json ${tempCheckpointFile}`, { stdio: 'ignore' });
+      if (fs.existsSync(tempCheckpointFile)) {
+        const raw = fs.readFileSync(tempCheckpointFile, 'utf8');
+        checkpointVars = JSON.parse(raw);
+        console.log(`[AuraOS Sandbox] Recovered checkpoint state variables from sandbox:`, checkpointVars);
+        fs.unlinkSync(tempCheckpointFile);
+      }
+    } catch (err) {
+      // No checkpoint written or container failed before write
+    }
   }
 
   // Always clean up the container
