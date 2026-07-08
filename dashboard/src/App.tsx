@@ -4,7 +4,6 @@ import {
   Terminal, 
   Play, 
   Pause, 
-  Layers, 
   Activity,
   AlertCircle,
   Plus,
@@ -429,8 +428,29 @@ console.log('Output logs:', result.stdout);`;
       {/* Header */}
       <header className="panel header-container">
         <div className="header-logo-group">
-          <div className="header-icon">
-            <Layers style={{ width: '24px', height: '24px' }} />
+          <div className="header-icon" style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" style={{ width: '100%', height: '100%' }}>
+              <defs>
+                <linearGradient id="auraGradHeader" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#00F0FF" />
+                  <stop offset="100%" stopColor="#4F46E5" />
+                </linearGradient>
+                <linearGradient id="coreGradHeader" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#4F46E5" />
+                  <stop offset="100%" stopColor="#6366F1" />
+                </linearGradient>
+                <filter id="glowHeader" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="5" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              <circle cx="50" cy="50" r="38" stroke="url(#auraGradHeader)" strokeWidth="5" strokeLinecap="round" strokeDasharray="160 50" filter="url(#glowHeader)" />
+              <polygon points="50,22 74,36 74,64 50,78 26,64 26,36" fill="url(#coreGradHeader)" opacity="0.95" />
+              <path d="M50,33 L62,59 M50,33 L38,59 M42,51 L58,51" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </div>
           <div className="header-title-text">
             <h1>AuraOS Control Center</h1>
