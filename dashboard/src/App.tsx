@@ -1175,7 +1175,13 @@ print("Duration:", result.duration_ms, "ms")`}
               <button 
                 onClick={() => setShowDocsModal(false)}
                 className="btn btn-primary"
-                style={{ minWidth: '100px', padding: '8px 16px', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', borderColor: 'rgba(16, 185, 129, 0.4)' }}
+                style={{ 
+                  minWidth: '100px', 
+                  padding: '8px 16px', 
+                  color: '#fff',
+                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', 
+                  borderColor: 'rgba(16, 185, 129, 0.4)' 
+                }}
               >
                 Close Docs
               </button>
