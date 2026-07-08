@@ -92,6 +92,7 @@ export default function App() {
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [deleteSubmitting, setDeleteSubmitting] = useState<boolean>(false);
+  const [lastCopiedSdk, setLastCopiedSdk] = useState<'python' | 'ts' | null>(null);
 
   const mockApiKey = 'ao_test_3a8c1f9e2b774d8bb9a3efd85c414902';
 
@@ -366,6 +367,11 @@ export default function App() {
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopiedText(type);
+    if (type === 'pip') {
+      setLastCopiedSdk('python');
+    } else if (type === 'npm') {
+      setLastCopiedSdk('ts');
+    }
     setTimeout(() => setCopiedText(null), 2000);
   };
 
@@ -942,38 +948,52 @@ console.log('Output logs:', result.stdout);`;
             </div>
 
             {/* SDK setup block */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <label className="form-label">Install SDK Packages</label>
-              
-              {/* Python setup */}
-              <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-secondary)' }}>pip install -e ./sdk/python</span>
-                <button 
-                  onClick={() => handleCopy('pip install -e ./sdk/python', 'pip')}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
-                >
-                  {copiedText === 'pip' ? <Check style={{ width: '14px', height: '14px', color: '#10b981' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
-                </button>
-              </div>
+            {(() => {
+              const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+              const pipCommand = isDev ? 'pip install -e ./sdk/python' : 'pip install auraos';
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <label className="form-label">Install SDK Packages</label>
+                  
+                  {/* Python setup */}
+                  <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-secondary)' }}>{pipCommand}</span>
+                    <button 
+                      onClick={() => handleCopy(pipCommand, 'pip')}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                    >
+                      {copiedText === 'pip' ? <Check style={{ width: '14px', height: '14px', color: '#10b981' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
+                    </button>
+                  </div>
 
-              {/* Node setup */}
-              <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-secondary)' }}>npm install @auraos/sdk</span>
-                <button 
-                  onClick={() => handleCopy('npm install @auraos/sdk', 'npm')}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
-                >
-                  {copiedText === 'npm' ? <Check style={{ width: '14px', height: '14px', color: '#10b981' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
-                </button>
-              </div>
-            </div>
+                  {/* Node setup */}
+                  <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-secondary)' }}>npm install @auraos/sdk</span>
+                    <button 
+                      onClick={() => handleCopy('npm install @auraos/sdk', 'npm')}
+                      style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                    >
+                      {copiedText === 'npm' ? <Check style={{ width: '14px', height: '14px', color: '#10b981' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
             <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
               Create API keys and instantiate container sandboxes natively inside your editor context. The playground UI above is mapped to the same execution pools.
             </p>
 
             <button 
-              onClick={() => setShowSdkModal(false)}
+              onClick={() => {
+                setShowSdkModal(false);
+                if (lastCopiedSdk === 'python') {
+                  setIntegrationTab('python');
+                } else if (lastCopiedSdk === 'ts') {
+                  setIntegrationTab('ts');
+                }
+                setLastCopiedSdk(null);
+              }}
               className="btn btn-primary"
               style={{ width: '100%', padding: '10px 0' }}
             >
