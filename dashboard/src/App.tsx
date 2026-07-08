@@ -11,7 +11,12 @@ import {
   X,
   Edit2,
   Trash2,
-  DollarSign
+  DollarSign,
+  Code,
+  Terminal as ConsoleIcon,
+  Check,
+  Copy,
+  Key
 } from 'lucide-react';
 
 interface Agent {
@@ -65,7 +70,7 @@ export default function App() {
   const logContainerRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
-  // --- Registration Form States ---
+  // --- Playground Forms / Tabs States ---
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [newAgentName, setNewAgentName] = useState<string>('');
   const [newAgentRuntime, setNewAgentRuntime] = useState<'python' | 'node'>('python');
@@ -79,6 +84,13 @@ export default function App() {
   const [editAgentRuntime, setEditAgentRuntime] = useState<'python' | 'node'>('python');
   const [editAgentCode, setEditAgentCode] = useState<string>('');
   const [editSubmitting, setEditSubmitting] = useState<boolean>(false);
+
+  // --- PLG Integration Snippets Tabs ---
+  const [integrationTab, setIntegrationTab] = useState<'code' | 'curl' | 'python' | 'ts'>('code');
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [showSdkModal, setShowSdkModal] = useState<boolean>(false);
+
+  const mockApiKey = 'ao_test_3a8c1f9e2b774d8bb9a3efd85c414902';
 
   // --- WebSockets Integration ---
   useEffect(() => {
@@ -117,7 +129,6 @@ export default function App() {
           if (payload.runtime) {
             setAgentRuntimes(prev => ({ ...prev, [agentId]: payload.runtime }));
           }
-          // Load historical billing metrics if returned
           if (payload.variables) {
             const lastDuration = payload.variables.last_run_duration_ms || 0;
             const cost = lastDuration ? (lastDuration / 1000) * (128 / 1024) * 0.00001667 : 0;
@@ -202,6 +213,7 @@ export default function App() {
       }));
     }
     setShowEditForm(false);
+    setIntegrationTab('code');
   }, [selectedAgentId, wsConnected]);
 
   // --- Auto-scroll logs ---
@@ -227,7 +239,6 @@ export default function App() {
       if (!response.ok) throw new Error('Wakeup webhook trigger failed.');
     } catch (err: any) {
       console.error(err);
-      // Fallback local triggers simulator for visual reassurance if fetch fails
       const time = new Date().toLocaleTimeString();
       setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'running' } : a));
       setLogs(prev => ({
@@ -280,8 +291,8 @@ export default function App() {
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Failed to register agent.');
       }
+
       setSelectedAgentId(result.agent.id);
-      
       setNewAgentName('');
       setNewAgentRuntime('python');
       setNewAgentCode(DEFAULT_PYTHON_CODE);
@@ -326,7 +337,7 @@ export default function App() {
   // --- Delete agent ---
   const handleDeleteAgent = async () => {
     if (!selectedAgent) return;
-    const confirm = window.confirm(`Are you sure you want to delete "${selectedAgent.name}"?`);
+    const confirm = window.confirm(`Are you sure you want to delete playground "${selectedAgent.name}"?`);
     if (!confirm) return;
 
     try {
@@ -338,6 +349,56 @@ export default function App() {
       console.error(err);
       alert('Error deleting agent.');
     }
+  };
+
+  // --- Copy Helper ---
+  const handleCopy = (text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(type);
+    setTimeout(() => setCopiedText(null), 2000);
+  };
+
+  // --- Snippet Generators ---
+  const getCurlSnippet = () => {
+    return `curl -X POST http://localhost:8081/webhook/${selectedAgentId || 'agent-id'} \\
+  -H "Content-Type: application/json" \\
+  -H "X-AuraOS-Token: ${mockApiKey}" \\
+  -d '{"input_query": "Optimize metrics"}'`;
+  };
+
+  const getPythonSnippet = () => {
+    return `from auraos import Sandbox
+
+# Initialize sandbox container dynamically
+sb = Sandbox(
+    runtime="${selectedAgent?.runtime || 'python'}",
+    api_key="${mockApiKey}"
+)
+
+# Dispatch agent execution cycle
+result = sb.run("""
+${agentCodes[selectedAgentId || ''] || '# Code snippet placeholder'}
+""")
+
+print("Stdout:", result.stdout)
+if result.exit_code != 0:
+    print("Error:", result.stderr)`;
+  };
+
+  const getTsSnippet = () => {
+    return `import { Sandbox } from '@auraos/sdk';
+
+const sb = new Sandbox({
+  runtime: '${selectedAgent?.runtime || 'python'}',
+  apiKey: '${mockApiKey}'
+});
+
+// Dispatch agent execution cycle
+const result = await sb.run(\`
+${agentCodes[selectedAgentId || ''] || '// Code snippet placeholder'}
+\`);
+
+console.log('Output logs:', result.stdout);`;
   };
 
   return (
@@ -359,7 +420,16 @@ export default function App() {
         </div>
 
         {/* Live status indicators */}
-        <div className="status-badge-group">
+        <div className="status-badge-group" style={{ gap: '16px' }}>
+          <button 
+            onClick={() => setShowSdkModal(true)} 
+            className="btn btn-secondary" 
+            style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px', background: 'rgba(99, 102, 241, 0.08)', borderColor: 'rgba(99, 102, 241, 0.2)' }}
+          >
+            <Key style={{ width: '12px', height: '12px', color: '#818cf8' }} />
+            API Keys & SDK
+          </button>
+
           <div className="badge">
             <Activity style={{ width: '16px', height: '16px', color: '#10b981' }} />
             <span>Database: Connected</span>
@@ -386,7 +456,7 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: '0', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)' }}>
-                  Register Agent
+                  Deploy Playground Sandbox
                 </h3>
                 <button 
                   onClick={() => setShowCreateForm(false)} 
@@ -404,11 +474,11 @@ export default function App() {
                 )}
 
                 <div className="form-group">
-                  <label className="form-label">Agent Name</label>
+                  <label className="form-label">Sandbox Name</label>
                   <input 
                     type="text" 
                     className="form-input" 
-                    placeholder="e.g., Sentiment Classifier" 
+                    placeholder="e.g., Sentiment Classifier Sandbox" 
                     value={newAgentName}
                     onChange={(e) => setNewAgentName(e.target.value)}
                     required
@@ -436,7 +506,7 @@ export default function App() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Execution Code Script</label>
+                  <label className="form-label">Test Script Code</label>
                   <textarea 
                     className="form-textarea custom-scrollbar" 
                     value={newAgentCode}
@@ -451,7 +521,7 @@ export default function App() {
                   className="btn btn-primary" 
                   style={{ width: '100%', padding: '12px', marginTop: '8px' }}
                 >
-                  {formSubmitting ? 'Registering...' : 'Register & Deploy'}
+                  {formSubmitting ? 'Deploying...' : 'Deploy Playground'}
                 </button>
               </form>
             </div>
@@ -460,7 +530,7 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h3 style={{ margin: '0', fontSize: '0.85rem', fontWeight: '700', textTransform: 'uppercase', color: 'var(--color-text-secondary)' }}>
-                  Edit Agent Config
+                  Edit Sandbox Config
                 </h3>
                 <button 
                   onClick={() => setShowEditForm(false)} 
@@ -472,7 +542,7 @@ export default function App() {
 
               <form onSubmit={handleEditAgent}>
                 <div className="form-group">
-                  <label className="form-label">Agent Name</label>
+                  <label className="form-label">Sandbox Name</label>
                   <input 
                     type="text" 
                     className="form-input" 
@@ -495,7 +565,7 @@ export default function App() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Execution Code Script</label>
+                  <label className="form-label">Test Script Code</label>
                   <textarea 
                     className="form-textarea custom-scrollbar" 
                     value={editAgentCode}
@@ -520,10 +590,10 @@ export default function App() {
               <div className="agent-list-header">
                 <h2 className="agent-list-title">
                   <Cpu style={{ width: '16px', height: '16px', color: '#818cf8' }} />
-                  Cognitive Containers
+                  Playground Sandboxes
                 </h2>
                 <span className="agent-list-count">
-                  {agents.length} Total
+                  {agents.length} Active
                 </span>
               </div>
 
@@ -531,7 +601,7 @@ export default function App() {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '40px 10px', background: 'rgba(0,0,0,0.15)', border: '1px dashed rgba(255,255,255,0.02)', borderRadius: '12px' }}>
                   <AlertCircle style={{ width: '28px', height: '28px', color: 'var(--color-text-muted)' }} />
                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', textAlign: 'center' }}>
-                    No containers active.
+                    No sandboxes deployed.
                   </span>
                 </div>
               ) : (
@@ -591,7 +661,7 @@ export default function App() {
                 style={{ width: '100%', gap: '6px' }}
               >
                 <Plus style={{ width: '16px', height: '16px' }} />
-                Register New Agent
+                New Playground Sandbox
               </button>
 
               {/* Manual Override & Config CRUD controls for selected agent */}
@@ -638,7 +708,7 @@ export default function App() {
                       style={{ gap: '6px', color: 'var(--color-error)', background: 'rgba(244,63,94,0.03)', borderColor: 'rgba(244,63,94,0.1)' }}
                     >
                       <Trash2 style={{ width: '12px', height: '12px' }} />
-                      Delete Agent
+                      Delete
                     </button>
                   </div>
                 </div>
@@ -648,81 +718,261 @@ export default function App() {
 
         </div>
 
-        {/* Right Column: Large Console Log Stream & Metering Display */}
-        <div className="right-content" style={{ display: 'flex', flexDirection: 'column' }}>
+        {/* Right Column: Console Terminal or Integration API Code Snippets */}
+        <div className="right-content" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {selectedAgent ? (
-            <div className="panel console-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-              
-              {/* Header with Logs Meta and Billing Metering Info */}
-              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Terminal style={{ width: '16px', height: '16px', color: '#818cf8' }} />
-                  <h2 className="section-title" style={{ margin: 0 }}>Console Log Stream</h2>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>
-                    ({selectedAgent.name})
-                  </span>
+            <>
+              {/* API Integration Tab Group Selector */}
+              <div className="panel" style={{ padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    onClick={() => setIntegrationTab('code')}
+                    className={`btn ${integrationTab === 'code' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px' }}
+                  >
+                    <Code style={{ width: '12px', height: '12px' }} />
+                    Interactive Sandbox
+                  </button>
+                  
+                  <button 
+                    onClick={() => setIntegrationTab('curl')}
+                    className={`btn ${integrationTab === 'curl' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px' }}
+                  >
+                    <ConsoleIcon style={{ width: '12px', height: '12px' }} />
+                    cURL API
+                  </button>
+
+                  <button 
+                    onClick={() => setIntegrationTab('python')}
+                    className={`btn ${integrationTab === 'python' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px' }}
+                  >
+                    Python SDK
+                  </button>
+
+                  <button 
+                    onClick={() => setIntegrationTab('ts')}
+                    className={`btn ${integrationTab === 'ts' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px' }}
+                  >
+                    TypeScript SDK
+                  </button>
                 </div>
 
-                {/* Metering Billing statistics */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {activeBilling && activeBilling.durationMs > 0 ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.04)', fontSize: '0.75rem', fontFamily: 'monospace' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-text-secondary)' }}>
-                        <span style={{ color: 'var(--neon-teal)' }}>●</span> {activeBilling.durationMs}ms
-                      </span>
-                      <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
-                      <span style={{ color: 'var(--color-text-secondary)' }}>
-                        {activeBilling.ramAllocatedMb}MB RAM
-                      </span>
-                      <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#10b981', fontWeight: 'bold' }}>
-                        <DollarSign style={{ width: '12px', height: '12px', strokeWidth: 3 }} />
-                        {activeBilling.costUsd.toFixed(8)}
-                      </span>
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                      No active metering metrics. Wake up container to compute.
-                    </div>
-                  )}
-                </div>
+                <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
+                  Sandbox ID: {selectedAgent.id}
+                </span>
               </div>
 
-              {/* Console logs container */}
-              <div className="console-container custom-scrollbar" ref={logContainerRef} style={{ flex: 1, overflowY: 'auto', marginTop: '16px', fontSize: '0.8rem', lineHeight: '1.6' }}>
-                {activeLogs.length === 0 ? (
-                  <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                    No active console logs. Run the sandbox or trigger the agent to view logs.
+              {/* Conditionally render: Sandbox Terminal logs or Egress Code snippets */}
+              {integrationTab === 'code' ? (
+                /* Terminal Console Log Stream */
+                <div className="panel console-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                  
+                  <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Terminal style={{ width: '16px', height: '16px', color: '#818cf8' }} />
+                      <h2 className="section-title" style={{ margin: 0 }}>Console Log Stream</h2>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>
+                        ({selectedAgent.name})
+                      </span>
+                    </div>
+
+                    {/* Telemetry / Billing Indicators */}
+                    <div>
+                      {activeBilling && activeBilling.durationMs > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.04)', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-text-secondary)' }}>
+                            <span style={{ color: 'var(--neon-teal)' }}>●</span> {activeBilling.durationMs}ms
+                          </span>
+                          <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
+                          <span style={{ color: 'var(--color-text-secondary)' }}>
+                            {activeBilling.ramAllocatedMb}MB RAM
+                          </span>
+                          <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#10b981', fontWeight: 'bold' }}>
+                            <DollarSign style={{ width: '12px', height: '12px', strokeWidth: 3 }} />
+                            {activeBilling.costUsd.toFixed(8)}
+                          </span>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                          Wake up container to compute execution billing metrics.
+                        </div>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  activeLogs.map((log, index) => {
-                    let msgClass = 'log-msg-stdout';
-                    if (log.stream === 'stderr' || log.message.toLowerCase().includes('error')) {
-                      msgClass = 'log-msg-stderr';
-                    } else if (log.stream === 'system') {
-                      msgClass = 'log-msg-system';
-                    }
 
-                    return (
-                      <div key={index} className="log-line">
-                        <span className="log-time">[{log.timestamp}]</span>
-                        <span className="log-stream">[{log.stream}]</span>
-                        <span className={msgClass}>{log.message}</span>
+                  {/* Logs terminal block */}
+                  <div className="console-container custom-scrollbar" ref={logContainerRef} style={{ flex: 1, overflowY: 'auto', marginTop: '16px', fontSize: '0.8rem', lineHeight: '1.6' }}>
+                    {activeLogs.length === 0 ? (
+                      <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                        No active logs. Click "Wake up" to execute script in secure sandbox.
                       </div>
-                    );
-                  })
-                )}
-              </div>
+                    ) : (
+                      activeLogs.map((log, index) => {
+                        let msgClass = 'log-msg-stdout';
+                        if (log.stream === 'stderr' || log.message.toLowerCase().includes('error')) {
+                          msgClass = 'log-msg-stderr';
+                        } else if (log.stream === 'system') {
+                          msgClass = 'log-msg-system';
+                        }
 
-            </div>
+                        return (
+                          <div key={index} className="log-line">
+                            <span className="log-time">[{log.timestamp}]</span>
+                            <span className="log-stream">[{log.stream}]</span>
+                            <span className={msgClass}>{log.message}</span>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                </div>
+              ) : (
+                /* Egress API / SDK Integration Snippet Panel */
+                <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 className="section-title" style={{ margin: 0 }}>
+                      {integrationTab === 'curl' && 'API cURL Request Template'}
+                      {integrationTab === 'python' && 'Python SDK Integration'}
+                      {integrationTab === 'ts' && 'TypeScript SDK Integration'}
+                    </h2>
+                    
+                    <button 
+                      onClick={() => {
+                        const snip = integrationTab === 'curl' 
+                          ? getCurlSnippet() 
+                          : integrationTab === 'python' 
+                          ? getPythonSnippet() 
+                          : getTsSnippet();
+                        handleCopy(snip, integrationTab);
+                      }}
+                      className="btn btn-secondary"
+                      style={{ padding: '6px 12px', fontSize: '0.75rem', gap: '6px' }}
+                    >
+                      {copiedText === integrationTab ? (
+                        <>
+                          <Check style={{ width: '12px', height: '12px', color: '#10b981' }} />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy style={{ width: '12px', height: '12px' }} />
+                          Copy Snippet
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--color-text-secondary)', lineHeight: '1.5' }}>
+                    {integrationTab === 'curl' && 'Call your secure sandbox webhook directly via HTTP to trigger execution cycles from external services like GitHub actions or Supabase database listeners.'}
+                    {integrationTab === 'python' && 'Integrate sandboxed runtimes natively inside your python backend. Secure cgroup boundaries clamp resource usage and keep execution thread-safe.'}
+                    {integrationTab === 'ts' && 'Launch node or python agents inside sandboxed runtimes using our npm SDK wrapper. Safe, fast, and scalable.'}
+                  </p>
+
+                  <pre className="inspector-pre custom-scrollbar" style={{ flex: 1, overflow: 'auto', padding: '16px', margin: 0, fontSize: '0.75rem', lineHeight: '1.6', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.02)' }}>
+                    {integrationTab === 'curl' && getCurlSnippet()}
+                    {integrationTab === 'python' && getPythonSnippet()}
+                    {integrationTab === 'ts' && getTsSnippet()}
+                  </pre>
+                </div>
+              )}
+            </>
           ) : (
             <div className="panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-              <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Select an agent from the left pane or click "Register New Agent".</p>
+              <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Select a sandbox playground from the sidebar or click "New Playground Sandbox".</p>
             </div>
           )}
         </div>
 
       </div>
+
+      {/* API Keys & SDK setup Modal Dialog */}
+      {showSdkModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="panel" style={{ maxWidth: '540px', width: '90%', padding: '24px', position: 'relative', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+            
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Key style={{ width: '18px', height: '18px', color: '#818cf8' }} />
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 'bold' }}>AuraOS Developer Setup</h3>
+              </div>
+              <button 
+                onClick={() => setShowSdkModal(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0 }}
+              >
+                <X style={{ width: '18px', height: '18px' }} />
+              </button>
+            </div>
+
+            {/* API Key box */}
+            <div>
+              <label className="form-label" style={{ marginBottom: '8px', display: 'block' }}>Your Developer API Key</label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input 
+                  type="text" 
+                  readOnly 
+                  value={mockApiKey} 
+                  className="form-input" 
+                  style={{ fontFamily: 'monospace', fontSize: '0.75rem', background: 'rgba(0,0,0,0.6)' }}
+                />
+                <button 
+                  onClick={() => handleCopy(mockApiKey, 'key')}
+                  className="btn btn-secondary"
+                  style={{ padding: '0 16px', fontSize: '0.75rem', gap: '6px' }}
+                >
+                  {copiedText === 'key' ? <Check style={{ width: '14px', height: '14px', color: '#10b981' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
+                </button>
+              </div>
+            </div>
+
+            {/* SDK setup block */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <label className="form-label">Install SDK Packages</label>
+              
+              {/* Python setup */}
+              <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-secondary)' }}>pip install auraos</span>
+                <button 
+                  onClick={() => handleCopy('pip install auraos', 'pip')}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                >
+                  {copiedText === 'pip' ? <Check style={{ width: '14px', height: '14px', color: '#10b981' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
+                </button>
+              </div>
+
+              {/* Node setup */}
+              <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-secondary)' }}>npm install @auraos/sdk</span>
+                <button 
+                  onClick={() => handleCopy('npm install @auraos/sdk', 'npm')}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
+                >
+                  {copiedText === 'npm' ? <Check style={{ width: '14px', height: '14px', color: '#10b981' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
+                </button>
+              </div>
+            </div>
+
+            <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: '1.5' }}>
+              Create API keys and instantiate container sandboxes natively inside your editor context. The playground UI above is mapped to the same execution pools.
+            </p>
+
+            <button 
+              onClick={() => setShowSdkModal(false)}
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '10px 0' }}
+            >
+              Done
+            </button>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
