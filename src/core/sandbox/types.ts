@@ -48,6 +48,8 @@ export interface ExecutionResult {
   oomKilled: boolean;
   /** Container ID used for this execution */
   containerId: string;
+  /** Recovered intermediate checkpoint variables */
+  checkpointVars?: Record<string, any>;
 }
 
 export type SandboxStatus = 'idle' | 'creating' | 'running' | 'completed' | 'timeout' | 'error' | 'oom_killed';

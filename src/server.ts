@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { db } from './core/db/client.js';
 import { liveStream } from './core/events/live-stream.js';
 import { webhookListener } from './core/scheduler/webhook-listener.js';
+import { egressProxy } from './core/sandbox/egress-proxy.js';
 
 dotenv.config();
 
@@ -15,10 +16,13 @@ async function startServer() {
     const dbRes = await db.query('SELECT NOW() as db_time;');
     console.log(`[AuraOS Server] Database connected. DB time: ${dbRes.rows[0].db_time}`);
 
-    // 2. Start Live Stream WebSocket Server (port 8085)
+    // 2. Start Egress Proxy (port 8086)
+    await egressProxy.start();
+
+    // 3. Start Live Stream WebSocket Server (port 8085)
     liveStream.start(8085);
 
-    // 3. Start Webhook Trigger HTTP Listener (port 8081)
+    // 4. Start Webhook Trigger HTTP Listener (port 8081)
     await webhookListener.start();
     
     console.log(`[AuraOS Server] Core systems online. Ready to execute cognitive workloads.`);

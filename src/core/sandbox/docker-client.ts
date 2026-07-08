@@ -29,16 +29,25 @@ export interface ContainerInspectResult {
  * Create and start a Docker container with resource constraints.
  */
 export async function createContainer(opts: ContainerCreateOptions): Promise<Docker.Container> {
+  // Inject egress proxy settings
+  const env = [
+    ...(opts.env || []),
+    'HTTP_PROXY=http://host.docker.internal:8086',
+    'HTTPS_PROXY=http://host.docker.internal:8086',
+    'http_proxy=http://host.docker.internal:8086',
+    'https_proxy=http://host.docker.internal:8086',
+  ];
+
   const container = await docker.createContainer({
     Image: opts.image,
     Cmd: opts.cmd,
-    Env: opts.env || [],
+    Env: env,
     OpenStdin: opts.stdin || false,
     StdinOnce: opts.stdin || false,
     AttachStdin: opts.stdin || false,
     AttachStdout: true,
     AttachStderr: true,
-    NetworkDisabled: opts.networkDisabled,
+    NetworkDisabled: false, // Must be false to talk to proxy
     HostConfig: {
       Memory: opts.memoryBytes,
       MemorySwap: opts.memoryBytes, // No swap, hard memory limit
@@ -49,6 +58,7 @@ export async function createContainer(opts: ContainerCreateOptions): Promise<Doc
         '/tmp': 'size=64m,mode=1777'
       },
       SecurityOpt: ['no-new-privileges'],
+      ExtraHosts: ['host.docker.internal:host-gateway']
     },
   });
 

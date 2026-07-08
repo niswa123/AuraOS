@@ -14,6 +14,8 @@ import {
 } from './docker-client.js';
 import type { SandboxConfig, ExecutionResult, ResourceLimits } from './types.js';
 import { DEFAULT_LIMITS, MAX_LIMITS } from './types.js';
+import { execSync } from 'child_process';
+import fs from 'fs';
 
 const RUNTIME_IMAGES: Record<string, string> = {
   python: 'auraos-python-runner',
@@ -115,9 +117,28 @@ export async function executeInSandbox(config: SandboxConfig): Promise<Execution
   } finally {
     // Clear the timeout timer
     clearTimeout(timeoutHandle);
+  }
 
-    // Always clean up the container
+  // Attempt to recover state checkpoints from /tmp/state_checkpoint.json inside the stopped container
+  let checkpointVars: any = undefined;
+  const tempCheckpointFile = `/tmp/checkpoint_${config.executionId}.json`;
+  try {
+    execSync(`docker cp ${containerId}:/tmp/state_checkpoint.json ${tempCheckpointFile}`, { stdio: 'ignore' });
+    if (fs.existsSync(tempCheckpointFile)) {
+      const raw = fs.readFileSync(tempCheckpointFile, 'utf8');
+      checkpointVars = JSON.parse(raw);
+      console.log(`[AuraOS Sandbox] Recovered checkpoint state variables from sandbox:`, checkpointVars);
+      fs.unlinkSync(tempCheckpointFile);
+    }
+  } catch (err) {
+    // No checkpoint written or container failed before write
+  }
+
+  // Always clean up the container
+  try {
     await removeContainer(container);
+  } catch (cleanupErr) {
+    // Ignore cleanup error if already removed
   }
 
   const durationMs = Date.now() - startTime;
@@ -140,6 +161,7 @@ export async function executeInSandbox(config: SandboxConfig): Promise<Execution
     timedOut,
     oomKilled,
     containerId,
+    checkpointVars,
   };
 }
 

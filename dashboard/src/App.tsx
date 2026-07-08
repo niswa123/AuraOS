@@ -5,14 +5,13 @@ import {
   Play, 
   Pause, 
   Layers, 
-  Clock, 
-  Database,
   Activity,
   AlertCircle,
   Plus,
   X,
   Edit2,
-  Trash2
+  Trash2,
+  DollarSign
 } from 'lucide-react';
 
 interface Agent {
@@ -29,34 +28,36 @@ interface LogEntry {
   message: string;
 }
 
+interface BillingStats {
+  durationMs: number;
+  ramAllocatedMb: number;
+  costUsd: number;
+}
+
 const DEFAULT_PYTHON_CODE = `import time
-def rosenbrock(x, y):
-    return (1 - x)**2 + 100 * (y - x**2)**2
+# AuraOS Intermediate Checkpoint Demonstration Script
+print("🚀 Execution cycle active inside secure Docker sandbox...")
 
-def gradients(x, y):
-    dx = -2 * (1 - x) - 400 * x * (y - x**2)
-    dy = 200 * (y - x**2)
-    return dx, dy
+# 1. Simulate process computation
+time.sleep(1)
 
-x, y = -1.2, 1.0
-lr = 0.0015
-print("🚀 Running Gradient Descent Optimizer...")
-for epoch in range(1, 11):
-    dx, dy = gradients(x, y)
-    x = x - lr * dx
-    y = y - lr * dy
-    print(f"Epoch {epoch}/10 -> Loss: {rosenbrock(x, y):.6f}")
-    time.sleep(0.5)
-print(f"✅ Found minimum: ({x:.4f}, {y:.4f})")`;
+# 2. Write checkpoint to filesystem (State Engine recovery check)
+checkpoint_data = '{"last_iteration": 42, "computed_value": 98.76, "status": "in_progress"}'
+with open("/tmp/state_checkpoint.json", "w") as f:
+    f.write(checkpoint_data)
+print("💾 Intermediate state checkpoint written to /tmp/state_checkpoint.json")
+
+# 3. Simulate remaining work
+time.sleep(1)
+print("✅ Sandbox execution complete. Initiating graceful teardown...")`;
 
 export default function App() {
-  // --- States (All initialized clean, NO mock data) ---
+  // --- States ---
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   
   const [logs, setLogs] = useState<Record<string, LogEntry[]>>({});
-  const [variables, setVariables] = useState<Record<string, Record<string, any>>>({});
-  const [timelines, setTimelines] = useState<Record<string, 'Trigger' | 'Active' | 'Hibernate' | 'Sleep'>>({});
+  const [billingStats, setBillingStats] = useState<Record<string, BillingStats>>({});
   const [agentCodes, setAgentCodes] = useState<Record<string, string>>({});
   const [agentRuntimes, setAgentRuntimes] = useState<Record<string, 'python' | 'node'>>({});
 
@@ -110,19 +111,24 @@ export default function App() {
 
         // 2. Load agent-specific state details
         if (type === 'agent_details' && payload) {
-          setVariables(prev => ({
-            ...prev,
-            [agentId]: payload.variables || {}
-          }));
-          setTimelines(prev => ({
-            ...prev,
-            [agentId]: payload.timelineStage || 'Sleep'
-          }));
           if (payload.code) {
             setAgentCodes(prev => ({ ...prev, [agentId]: payload.code }));
           }
           if (payload.runtime) {
             setAgentRuntimes(prev => ({ ...prev, [agentId]: payload.runtime }));
+          }
+          // Load historical billing metrics if returned
+          if (payload.variables) {
+            const lastDuration = payload.variables.last_run_duration_ms || 0;
+            const cost = lastDuration ? (lastDuration / 1000) * (128 / 1024) * 0.00001667 : 0;
+            setBillingStats(prev => ({
+              ...prev,
+              [agentId]: {
+                durationMs: lastDuration,
+                ramAllocatedMb: 128,
+                costUsd: cost
+              }
+            }));
           }
         }
 
@@ -165,19 +171,15 @@ export default function App() {
           }));
         }
 
-        // 5. State variable updates
-        if (type === 'state_change') {
-          setVariables(prev => ({
+        // 5. Billing metrics broadcast
+        if (type === 'billing_metrics' && payload) {
+          setBillingStats(prev => ({
             ...prev,
-            [agentId]: payload.variables
-          }));
-        }
-
-        // 6. Timeline transitions
-        if (type === 'timeline_transition') {
-          setTimelines(prev => ({
-            ...prev,
-            [agentId]: payload.stage
+            [agentId]: {
+              durationMs: payload.durationMs,
+              ramAllocatedMb: payload.ramAllocatedMb,
+              costUsd: payload.costUsd
+            }
           }));
         }
       } catch (err) {
@@ -199,7 +201,6 @@ export default function App() {
         agentId: selectedAgentId
       }));
     }
-    // Close forms when changing selection
     setShowEditForm(false);
   }, [selectedAgentId, wsConnected]);
 
@@ -212,8 +213,7 @@ export default function App() {
 
   const selectedAgent = selectedAgentId ? agents.find(a => a.id === selectedAgentId) : null;
   const activeLogs = selectedAgent ? logs[selectedAgent.id] || [] : [];
-  const activeVariables = selectedAgent ? variables[selectedAgent.id] || {} : null;
-  const activeTimeline = selectedAgent ? timelines[selectedAgent.id] || 'Sleep' : 'Sleep';
+  const activeBilling = selectedAgent ? billingStats[selectedAgent.id] : null;
 
   // --- Trigger wakeup ---
   const triggerWakeup = async () => {
@@ -230,7 +230,6 @@ export default function App() {
       // Fallback local triggers simulator for visual reassurance if fetch fails
       const time = new Date().toLocaleTimeString();
       setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'running' } : a));
-      setTimelines(prev => ({ ...prev, [selectedAgent.id]: 'Active' }));
       setLogs(prev => ({
         ...prev,
         [selectedAgent.id]: [
@@ -245,7 +244,6 @@ export default function App() {
     if (!selectedAgent) return;
     const time = new Date().toLocaleTimeString();
     setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'sleeping' } : a));
-    setTimelines(prev => ({ ...prev, [selectedAgent.id]: 'Sleep' }));
     setLogs(prev => ({
       ...prev,
       [selectedAgent.id]: [
@@ -283,7 +281,6 @@ export default function App() {
         throw new Error(result.error || 'Failed to register agent.');
       }
 
-      // Add to list and close form
       const newAgent: Agent = {
         id: result.agent.id,
         name: result.agent.name,
@@ -295,7 +292,6 @@ export default function App() {
       setAgents(prev => [...prev, newAgent]);
       setSelectedAgentId(newAgent.id);
       
-      // Reset inputs
       setNewAgentName('');
       setNewAgentRuntime('python');
       setNewAgentCode(DEFAULT_PYTHON_CODE);
@@ -325,7 +321,6 @@ export default function App() {
       });
       if (!response.ok) throw new Error('Failed to update agent.');
 
-      // Update local state list
       setAgents(prev => prev.map(a => a.id === selectedAgentId ? { ...a, name: editAgentName, runtime: editAgentRuntime } : a));
       setAgentCodes(prev => ({ ...prev, [selectedAgentId]: editAgentCode }));
       setAgentRuntimes(prev => ({ ...prev, [selectedAgentId]: editAgentRuntime }));
@@ -341,7 +336,7 @@ export default function App() {
   // --- Delete agent ---
   const handleDeleteAgent = async () => {
     if (!selectedAgent) return;
-    const confirm = window.confirm(`Are you sure you want to delete the agent "${selectedAgent.name}"? This will permanently erase all associated executions and states.`);
+    const confirm = window.confirm(`Are you sure you want to delete "${selectedAgent.name}"?`);
     if (!confirm) return;
 
     try {
@@ -349,7 +344,6 @@ export default function App() {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Deletion failed.');
-      // The WebSocket status_change listener will catch the 'deleted' event and update agents/selectedId reactively.
     } catch (err) {
       console.error(err);
       alert('Error deleting agent.');
@@ -394,7 +388,7 @@ export default function App() {
       {/* Dashboard Content split grid */}
       <div className="main-grid">
         
-        {/* Left Column: Container registration / Selection List */}
+        {/* Left Column: Container list & controls */}
         <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {showCreateForm ? (
@@ -664,114 +658,75 @@ export default function App() {
 
         </div>
 
-        {/* Right Column: Selected Agent Details Console & Timeline */}
-        <div className="right-content">
+        {/* Right Column: Large Console Log Stream & Metering Display */}
+        <div className="right-content" style={{ display: 'flex', flexDirection: 'column' }}>
           {selectedAgent ? (
-            <>
-              {/* Top Half: Log Stream Console */}
-              <div className="panel console-section">
-                <div className="section-header">
-                  <h2 className="section-title">
-                    <Terminal style={{ width: '16px', height: '16px', color: '#818cf8' }} />
-                    Console Log Stream
-                  </h2>
+            <div className="panel console-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              
+              {/* Header with Logs Meta and Billing Metering Info */}
+              <div className="section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Terminal style={{ width: '16px', height: '16px', color: '#818cf8' }} />
+                  <h2 className="section-title" style={{ margin: 0 }}>Console Log Stream</h2>
                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>
-                    Watching: {selectedAgent.name}
+                    ({selectedAgent.name})
                   </span>
                 </div>
 
-                <div className="console-container custom-scrollbar" ref={logContainerRef}>
-                  {activeLogs.length === 0 ? (
-                    <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
-                      No active console logs. Run the sandbox or trigger the agent to view logs.
+                {/* Metering Billing statistics */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {activeBilling && activeBilling.durationMs > 0 ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '6px 14px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.04)', fontSize: '0.75rem', fontFamily: 'monospace' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: 'var(--color-text-secondary)' }}>
+                        <span style={{ color: 'var(--neon-teal)' }}>●</span> {activeBilling.durationMs}ms
+                      </span>
+                      <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
+                      <span style={{ color: 'var(--color-text-secondary)' }}>
+                        {activeBilling.ramAllocatedMb}MB RAM
+                      </span>
+                      <span style={{ color: 'rgba(255,255,255,0.1)' }}>|</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '2px', color: '#10b981', fontWeight: 'bold' }}>
+                        <DollarSign style={{ width: '12px', height: '12px', strokeWidth: 3 }} />
+                        {activeBilling.costUsd.toFixed(8)}
+                      </span>
                     </div>
                   ) : (
-                    activeLogs.map((log, index) => {
-                      let msgClass = 'log-msg-stdout';
-                      if (log.stream === 'stderr' || log.message.toLowerCase().includes('error')) {
-                        msgClass = 'log-msg-stderr';
-                      } else if (log.stream === 'system') {
-                        msgClass = 'log-msg-system';
-                      }
-
-                      return (
-                        <div key={index} className="log-line">
-                          <span className="log-time">[{log.timestamp}]</span>
-                          <span className="log-stream">[{log.stream}]</span>
-                          <span className={msgClass}>{log.message}</span>
-                        </div>
-                      );
-                    })
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                      No active metering metrics. Wake up container to compute.
+                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Bottom Half: JSON inspector and Interactive Timeline */}
-              <div className="bottom-split-grid">
-                
-                {/* JSON State Inspector */}
-                <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <h2 className="section-title" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '12px', margin: '0' }}>
-                    <Database style={{ width: '16px', height: '16px', color: '#818cf8' }} />
-                    Variable Inspector
-                  </h2>
-                  {activeVariables && Object.keys(activeVariables).length > 0 ? (
-                    <pre className="inspector-pre custom-scrollbar">
-                      {JSON.stringify(activeVariables, null, 2)}
-                    </pre>
-                  ) : (
-                    <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', fontSize: '0.8rem', padding: '16px' }}>
-                      No active context variables serialized.
-                    </div>
-                  )}
-                </div>
-
-                {/* Interactive Timeline */}
-                <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <h2 className="section-title" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '12px', margin: '0' }}>
-                    <Clock style={{ width: '16px', height: '16px', color: '#818cf8' }} />
-                    Chronos State Transitions
-                  </h2>
-                  
-                  <div style={{ flex: '1', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '16px' }}>
-                    {/* Horizontal progress visualization */}
-                    <div className="timeline-flex">
-                      <div className="timeline-line"></div>
-                      
-                      {/* Stages */}
-                      {['Trigger', 'Active', 'Hibernate', 'Sleep'].map((stage, idx) => {
-                        const stages = ['Trigger', 'Active', 'Hibernate', 'Sleep'];
-                        const currentIdx = stages.indexOf(activeTimeline);
-                        const isCompleted = idx <= currentIdx;
-                        const isCurrent = activeTimeline === stage;
-
-                        return (
-                          <div key={stage} className={`timeline-step ${isCurrent ? 'active' : ''} ${isCompleted ? 'completed' : ''}`}>
-                            <div className="timeline-dot">
-                              {idx + 1}
-                            </div>
-                            <span className="timeline-label">
-                              {stage}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div className="timeline-info-text">
-                      {activeTimeline === 'Sleep' && 'Agent context is serialized on disk. 0% CPU consumption.'}
-                      {activeTimeline === 'Active' && 'Agent running dynamically inside isolated container sandbox.'}
-                      {activeTimeline === 'Hibernate' && 'Graceful teardown initiated. Context variables stored.'}
-                      {activeTimeline === 'Trigger' && 'External cron scheduler or webhook hit detected.'}
-                    </div>
+              {/* Console logs container */}
+              <div className="console-container custom-scrollbar" ref={logContainerRef} style={{ flex: 1, overflowY: 'auto', marginTop: '16px', fontSize: '0.8rem', lineHeight: '1.6' }}>
+                {activeLogs.length === 0 ? (
+                  <div style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+                    No active console logs. Run the sandbox or trigger the agent to view logs.
                   </div>
-                </div>
+                ) : (
+                  activeLogs.map((log, index) => {
+                    let msgClass = 'log-msg-stdout';
+                    if (log.stream === 'stderr' || log.message.toLowerCase().includes('error')) {
+                      msgClass = 'log-msg-stderr';
+                    } else if (log.stream === 'system') {
+                      msgClass = 'log-msg-system';
+                    }
 
+                    return (
+                      <div key={index} className="log-line">
+                        <span className="log-time">[{log.timestamp}]</span>
+                        <span className="log-stream">[{log.stream}]</span>
+                        <span className={msgClass}>{log.message}</span>
+                      </div>
+                    );
+                  })
+                )}
               </div>
 
-            </>
+            </div>
           ) : (
-            <div className="panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
+            <div className="panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
               <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Select an agent from the left pane or click "Register New Agent".</p>
             </div>
           )}

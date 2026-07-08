@@ -200,7 +200,35 @@ export class WebhookListener {
           }
         }
 
-        // 3. REST API Route: Webhook Trigger Wakeup
+        // 5. REST API Route: Database change event listener (Supabase Webhook mock)
+        if (url === '/webhook/db-change' && method === 'POST') {
+          let body = '';
+          req.on('data', chunk => {
+            body += chunk.toString();
+          });
+          req.on('end', async () => {
+            try {
+              const payload = JSON.parse(body);
+              console.log('[Webhook Listener] DB Change event captured:', payload);
+              
+              // Route to the first registered agent in database
+              const agentRes = await db.query('SELECT id, name FROM agents LIMIT 1');
+              if (agentRes.rows.length > 0) {
+                const targetAgent = agentRes.rows[0];
+                console.log(`[Webhook Listener] Routing DB event to agent "${targetAgent.name}" (${targetAgent.id})`);
+                await eventBroker.wakeup(targetAgent.id, 'db-change', payload);
+                sendJson(200, { success: true, routedToAgent: targetAgent.name });
+              } else {
+                sendJson(404, { success: false, error: 'No agents registered to route database change event.' });
+              }
+            } catch (err: any) {
+              sendJson(500, { success: false, error: err.message });
+            }
+          });
+          return;
+        }
+
+        // 6. REST API Route: Webhook Trigger Wakeup
         const match = url.match(/^\/webhook\/([a-zA-Z0-9-]+)$/);
 
         if (match && (method === 'POST' || method === 'GET')) {

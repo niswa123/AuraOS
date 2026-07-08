@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS executions (
   status VARCHAR(50) NOT NULL DEFAULT 'initialized',
   logs TEXT,
   token_usage JSONB NOT NULL DEFAULT '{}'::jsonb,
+  duration_ms INT NOT NULL DEFAULT 0,
+  ram_allocated_mb INT NOT NULL DEFAULT 256,
+  cost_usd NUMERIC(10, 8) NOT NULL DEFAULT 0.00000000,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
