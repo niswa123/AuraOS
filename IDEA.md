@@ -30,6 +30,12 @@ Traditional agents keep their entire history in the context window. When the hos
   2. The database layer stores this state indexed by `agent_id` and `turn_id`.
   3. Upon the next trigger (e.g., Webhook), the sandbox is rebuilt, the injector hydrates the runtime state, and execution resumes from the exact line of code.
 
+### Vector Storage: PostgreSQL + pgvector Rationale
+While dedicated vector databases (e.g., Qdrant, Milvus, Pinecone) provide advanced vector indices and scaling algorithms, we explicitly select PostgreSQL + `pgvector` for the MVP layer:
+- **Low Complexity Overhead**: Eliminates the operational cost of spinning up, maintaining, and billing a separate database service.
+- **Atomic State Updates**: Allows atomic transactions that commit both the relational execution metadata (state values, agent logs) and vector embeddings (memory storage) within a single SQL transaction.
+- **Cost Effectiveness**: Easily runs on cheap single-node instances during early-stage scaling, which matches the Lean GTM roadmap requirements.
+
 ---
 
 ## 3. Chronos Trigger System: Event-Driven Hibernation
