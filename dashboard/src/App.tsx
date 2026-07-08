@@ -1027,6 +1027,7 @@ console.log('Output logs:', result.stdout);`;
                 style={{ 
                   padding: '10px 0', 
                   fontSize: '0.8rem', 
+                  color: '#fff',
                   background: 'linear-gradient(135deg, #f43f5e 0%, #be123c 100%)', 
                   borderColor: 'rgba(244, 63, 94, 0.4)',
                   boxShadow: '0 0 12px rgba(244, 63, 94, 0.2)' 
