@@ -61,15 +61,15 @@ This document outlines the detailed development tasks required to build the Aura
 
 ---
 
-## [ ] Phase 6: Developer Dashboard (React UI)
-- [ ] Initialize React frontend project.
-- [ ] **Visual Theme Integration (Cinematic Dark Mode)**
-  - [ ] Apply `#0A0A0A` background and `#121214` card variables to `index.css`.
-  - [ ] Configure OKLCH indigo (#4F46E5-equivalent) accents.
-  - [ ] Build glassmorphic overlays (`backdrop-filter: blur(12px)` + 1px white border with 5% opacity).
-- [ ] **Core Panels**
-  - [ ] Build Agent List Grid (using neon-teal indicator rings for running containers).
-  - [ ] Build Real-time Log Stream panel using Monospace fonts (JetBrains Mono) with red/yellow syntax highlighting for errors/warnings.
-  - [ ] Build JSON State Inspector visualization block.
-  - [ ] Build Interactive Timeline showcasing agent transitions (Trigger -> Active -> Hibernate -> Sleep).
-- [ ] Integrate WebSockets client to stream container statuses directly from backend core.
+## [x] Phase 6: Developer Dashboard (React UI)
+- [x] Initialize React frontend project.
+- [x] **Visual Theme Integration (Cinematic Dark Mode)**
+  - [x] Apply `#0A0A0A` background and `#121214` card variables to `index.css`.
+  - [x] Configure OKLCH indigo (#4F46E5-equivalent) accents.
+  - [x] Build glassmorphic overlays (`backdrop-filter: blur(12px)` + 1px white border with 5% opacity).
+- [x] **Core Panels**
+  - [x] Build Agent List Grid (using neon-teal indicator rings for running containers).
+  - [x] Build Real-time Log Stream panel using Monospace fonts (JetBrains Mono) with red/yellow syntax highlighting for errors/warnings.
+  - [x] Build JSON State Inspector visualization block.
+  - [x] Build Interactive Timeline showcasing agent transitions (Trigger -> Active -> Hibernate -> Sleep).
+- [x] Integrate WebSockets client to stream container statuses directly from backend core.

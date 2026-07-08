@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  /* Cinematic Dark Theme Tokens */
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #121214;
+  --bg-tertiary: #1a1a1e;
+  
+  --border-color: rgba(255, 255, 255, 0.05);
+  --border-glass: rgba(255, 255, 255, 0.05);
+  
+  /* OKLCH indigo equivalent */
+  --accent: oklch(0.56 0.21 264);
+  --accent-light: oklch(0.65 0.18 264);
+  --accent-glow: rgba(79, 70, 229, 0.25);
+  
+  /* Neon Teal for Running/Active Containers */
+  --neon-teal: oklch(0.79 0.17 195);
+  --neon-teal-glow: rgba(20, 184, 166, 0.3);
+  
+  /* Log and Syntax Colors */
+  --color-error: #f43f5e;   /* Red */
+  --color-warning: #f59e0b; /* Yellow */
+  --color-info: #3b82f6;    /* Blue */
+  --color-success: #10b981; /* Green */
+  
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--bg-primary);
+  color: #f3f4f6;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-primary);
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(18, 18, 20, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* JetBrains Mono console scrollbars */
+.console-font {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Keyframe animations for glow rings */
+@keyframes neon-pulse {
+  0%, 100% {
+    box-shadow: 0 0 4px var(--neon-teal-glow), 0 0 12px var(--neon-teal-glow);
+    border-color: var(--neon-teal);
+  }
+  50% {
+    box-shadow: 0 0 8px var(--neon-teal-glow), 0 0 20px var(--neon-teal-glow);
+    border-color: oklch(0.85 0.14 195);
+  }
+}
+
+.active-ring {
+  animation: neon-pulse 2s infinite ease-in-out;
+  border: 2px solid var(--neon-teal);
+}
+
+/* Background ambient light effects */
+.ambient-glow {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.05) 0%, transparent 70%);
+  z-index: -1;
+  pointer-events: none;
+}
