@@ -89,6 +89,9 @@ export default function App() {
   const [integrationTab, setIntegrationTab] = useState<'code' | 'curl' | 'python' | 'ts'>('code');
   const [copiedText, setCopiedText] = useState<string | null>(null);
   const [showSdkModal, setShowSdkModal] = useState<boolean>(false);
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+  const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState<boolean>(false);
 
   const mockApiKey = 'ao_test_3a8c1f9e2b774d8bb9a3efd85c414902';
 
@@ -335,19 +338,27 @@ export default function App() {
   };
 
   // --- Delete agent ---
-  const handleDeleteAgent = async () => {
+  const initiateDeleteAgent = () => {
     if (!selectedAgent) return;
-    const confirm = window.confirm(`Are you sure you want to delete playground "${selectedAgent.name}"?`);
-    if (!confirm) return;
+    setAgentToDelete(selectedAgent);
+    setShowDeleteModal(true);
+  };
 
+  const confirmDeleteAgent = async () => {
+    if (!agentToDelete) return;
+    setDeleteSubmitting(true);
     try {
-      const response = await fetch(`http://localhost:8081/api/agents/${selectedAgent.id}`, {
+      const response = await fetch(`http://localhost:8081/api/agents/${agentToDelete.id}`, {
         method: 'DELETE'
       });
       if (!response.ok) throw new Error('Deletion failed.');
+      setShowDeleteModal(false);
+      setAgentToDelete(null);
     } catch (err) {
       console.error(err);
       alert('Error deleting agent.');
+    } finally {
+      setDeleteSubmitting(false);
     }
   };
 
@@ -703,7 +714,7 @@ console.log('Output logs:', result.stdout);`;
                       Edit Config
                     </button>
                     <button 
-                      onClick={handleDeleteAgent}
+                      onClick={initiateDeleteAgent}
                       className="btn btn-secondary"
                       style={{ gap: '6px', color: 'var(--color-error)', background: 'rgba(244,63,94,0.03)', borderColor: 'rgba(244,63,94,0.1)' }}
                     >
@@ -936,9 +947,12 @@ console.log('Output logs:', result.stdout);`;
               
               {/* Python setup */}
               <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-secondary)' }}>pip install auraos</span>
+                <div>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-secondary)', display: 'block' }}>pip install -e ./sdk/python</span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginTop: '2px', display: 'block' }}>* Run from repository root (/Users/ape.ces/Desktop/AuraOs)</span>
+                </div>
                 <button 
-                  onClick={() => handleCopy('pip install auraos', 'pip')}
+                  onClick={() => handleCopy('pip install -e ./sdk/python', 'pip')}
                   style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
                 >
                   {copiedText === 'pip' ? <Check style={{ width: '14px', height: '14px', color: '#10b981' }} /> : <Copy style={{ width: '14px', height: '14px' }} />}
@@ -968,6 +982,62 @@ console.log('Output logs:', result.stdout);`;
             >
               Done
             </button>
+
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {showDeleteModal && agentToDelete && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="panel" style={{ maxWidth: '440px', width: '90%', padding: '24px', position: 'relative', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px solid rgba(244, 63, 94, 0.25)' }}>
+            
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Trash2 style={{ width: '18px', height: '18px', color: 'var(--color-error)' }} />
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 'bold', color: 'var(--color-text-secondary)' }}>Delete Sandbox</h3>
+              </div>
+              <button 
+                onClick={() => { setShowDeleteModal(false); setAgentToDelete(null); }}
+                style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', padding: 0 }}
+              >
+                <X style={{ width: '18px', height: '18px' }} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)', lineHeight: '1.6' }}>
+                Are you sure you want to permanently delete playground sandbox <strong style={{ color: '#fff' }}>"{agentToDelete.name}"</strong>? 
+                This will terminate the execution session and cascade delete all metrics.
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '12px', marginTop: '8px' }}>
+              <button 
+                onClick={() => { setShowDeleteModal(false); setAgentToDelete(null); }}
+                className="btn btn-secondary"
+                style={{ padding: '10px 0', fontSize: '0.8rem' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDeleteAgent}
+                disabled={deleteSubmitting}
+                className="btn btn-primary"
+                style={{ 
+                  padding: '10px 0', 
+                  fontSize: '0.8rem', 
+                  background: 'linear-gradient(135deg, #f43f5e 0%, #be123c 100%)', 
+                  borderColor: 'rgba(244, 63, 94, 0.4)',
+                  boxShadow: '0 0 12px rgba(244, 63, 94, 0.2)' 
+                }}
+              >
+                {deleteSubmitting ? 'Deleting...' : 'Delete Sandbox'}
+              </button>
+            </div>
 
           </div>
         </div>
