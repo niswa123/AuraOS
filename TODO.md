@@ -4,28 +4,28 @@ This document outlines the detailed development tasks required to build the Aura
 
 ---
 
-## [ ] Phase 1: Foundation & Database Layer
-- [ ] Initialize Node.js & TypeScript configuration (`tsconfig.json`, `package.json`).
-- [ ] Set up database container configuration (Docker Compose with PostgreSQL + `pgvector`).
-- [ ] Implement database migration pipeline (`npm run migrate:up`).
-  - [ ] Write SQL schema to initialize the `agents`, `executions`, `states`, and `vector_memories` tables.
-  - [ ] Create `pgvector` index with HNSW or IVFFlat for cosine distance operations on memory vectors.
-- [ ] Implement DB Connection client with TypeScript connection pooling.
+## [x] Phase 1: Foundation & Database Layer
+- [x] Initialize Node.js & TypeScript configuration (`tsconfig.json`, `package.json`).
+- [x] Set up database container configuration (Docker Compose with PostgreSQL + `pgvector`).
+- [x] Implement database migration pipeline (`npm run migrate:up`).
+  - [x] Write SQL schema to initialize the `agents`, `executions`, `states`, and `vector_memories` tables.
+  - [x] Create `pgvector` index with HNSW or IVFFlat for cosine distance operations on memory vectors.
+- [x] Implement DB Connection client with TypeScript connection pooling.
 
 ---
 
-## [ ] Phase 2: Module 1 - Cognitive Container (Sandbox)
-- [ ] Set up execution sandbox orchestrator interface.
-- [ ] **Option A: WebAssembly (Wasm) Execution Pipeline**
+## [x] Phase 2: Module 1 - Cognitive Container (Sandbox)
+- [x] Set up execution sandbox orchestrator interface.
+- [ ] **Option A: WebAssembly (Wasm) Execution Pipeline** _(deferred post-MVP)_
   - [ ] Configure `wasi-js` / Wasmtime runner integration.
   - [ ] Design WASI-compliant JavaScript/Python entry points.
-- [ ] **Option B: Docker Micro-Container Execution Pipeline**
-  - [ ] Implement Docker Engine API client wrapper in Node.js.
-  - [ ] Write lightweight execution runner images for Python & Node.js.
-- [ ] **Resource Limits & Protection**
-  - [ ] Implement RAM limit boundaries per execution container.
-  - [ ] Implement CPU shares constraints.
-  - [ ] Implement hard timeouts (Timeout protection) with automatic SIGKILL triggers.
+- [x] **Option B: Docker Micro-Container Execution Pipeline**
+  - [x] Implement Docker Engine API client wrapper in Node.js (`dockerode`).
+  - [x] Write lightweight execution runner images for Python & Node.js.
+- [x] **Resource Limits & Protection**
+  - [x] Implement RAM limit boundaries per execution container.
+  - [x] Implement CPU shares constraints.
+  - [x] Implement hard timeouts (Timeout protection) with automatic SIGKILL triggers.
 
 ---
 
