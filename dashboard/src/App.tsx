@@ -428,28 +428,29 @@ console.log('Output logs:', result.stdout);`;
       {/* Header */}
       <header className="panel header-container">
         <div className="header-logo-group">
-          <div className="header-icon" style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="header-icon" style={{ width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" style={{ width: '100%', height: '100%' }}>
               <defs>
-                <linearGradient id="auraGradHeader" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="auraLeftHeader" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#00F0FF" />
+                  <stop offset="100%" stopColor="#3B82F6" />
+                </linearGradient>
+                <linearGradient id="auraRightHeader" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#3B82F6" />
                   <stop offset="100%" stopColor="#4F46E5" />
                 </linearGradient>
-                <linearGradient id="coreGradHeader" x1="0%" y1="100%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#4F46E5" />
+                <linearGradient id="auraCenterHeader" x1="0%" y1="100%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#00F0FF" />
                   <stop offset="100%" stopColor="#6366F1" />
                 </linearGradient>
-                <filter id="glowHeader" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="5" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
+                <filter id="haloHeader" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="8" result="blur" />
                 </filter>
               </defs>
-              <circle cx="50" cy="50" r="38" stroke="url(#auraGradHeader)" strokeWidth="5" strokeLinecap="round" strokeDasharray="160 50" filter="url(#glowHeader)" />
-              <polygon points="50,22 74,36 74,64 50,78 26,64 26,36" fill="url(#coreGradHeader)" opacity="0.95" />
-              <path d="M50,33 L62,59 M50,33 L38,59 M42,51 L58,51" stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="50" cy="50" r="32" fill="#00F0FF" opacity="0.15" filter="url(#haloHeader)" />
+              <path d="M 50 12 L 12 88 L 36 88 L 50 46 Z" fill="url(#auraLeftHeader)" />
+              <path d="M 50 12 L 50 46 L 64 88 L 88 88 Z" fill="url(#auraRightHeader)" />
+              <path d="M 50 40 L 58 53 L 50 66 L 42 53 Z" fill="url(#auraCenterHeader)" />
             </svg>
           </div>
           <div className="header-title-text">

@@ -1,34 +1,33 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" width="100%" height="100%">
   <defs>
-    <!-- Outer Aura glowing gradient -->
-    <linearGradient id="auraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <!-- Glowing gradients -->
+    <linearGradient id="auraLeft" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#00F0FF" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <linearGradient id="auraRight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" />
       <stop offset="100%" stop-color="#4F46E5" />
     </linearGradient>
-    <!-- Inner Core gradient -->
-    <linearGradient id="coreGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#4F46E5" />
+    <linearGradient id="auraCenter" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F0FF" />
       <stop offset="100%" stop-color="#6366F1" />
     </linearGradient>
-    <!-- Glow filter -->
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="6" result="blur" />
-      <feMerge>
-        <feMergeNode in="blur" />
-        <feMergeNode in="SourceGraphic" />
-      </feMerge>
+    <!-- Soft background glow for contrast and high-end feel -->
+    <filter id="halo" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
     </filter>
   </defs>
-  
-  <!-- Outer Aura Ring (Glowing Security Boundary) -->
-  <circle cx="50" cy="50" r="38" stroke="url(#auraGrad)" stroke-width="4" stroke-linecap="round" stroke-dasharray="160 50" filter="url(#glow)" />
-  
-  <!-- Secondary inner thin orbit ring -->
-  <circle cx="50" cy="50" r="28" stroke="rgba(255, 255, 255, 0.08)" stroke-width="1" stroke-dasharray="5 5" />
-  
-  <!-- Inner Hexagonal Secure Sandbox Core -->
-  <polygon points="50,22 74,36 74,64 50,78 26,64 26,36" fill="url(#coreGrad)" opacity="0.9" />
-  
-  <!-- Stylized Geometric "A" within the Core -->
-  <path d="M50,33 L62,59 M50,33 L38,59 M42,51 L58,51 M50,33 L50,59" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+
+  <!-- Ambient backing glow -->
+  <circle cx="50" cy="50" r="32" fill="#00F0FF" opacity="0.15" filter="url(#halo)" />
+
+  <!-- Left wing of Delta (representing Agent performance and security boundary) -->
+  <path d="M 50 12 L 12 88 L 36 88 L 50 46 Z" fill="url(#auraLeft)" />
+
+  <!-- Right wing of Delta -->
+  <path d="M 50 12 L 50 46 L 64 88 L 88 88 Z" fill="url(#auraRight)" />
+
+  <!-- Floating glowing energy diamond in the center (representing the Core Runtime / Sandbox) -->
+  <path d="M 50 40 L 58 53 L 50 66 L 42 53 Z" fill="url(#auraCenter)" />
 </svg>
