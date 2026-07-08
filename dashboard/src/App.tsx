@@ -947,10 +947,7 @@ console.log('Output logs:', result.stdout);`;
               
               {/* Python setup */}
               <div style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-secondary)', display: 'block' }}>pip install -e ./sdk/python</span>
-                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', marginTop: '2px', display: 'block' }}>* Run from repository root (/Users/ape.ces/Desktop/AuraOs)</span>
-                </div>
+                <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: 'var(--color-text-secondary)' }}>pip install -e ./sdk/python</span>
                 <button 
                   onClick={() => handleCopy('pip install -e ./sdk/python', 'pip')}
                   style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer' }}
