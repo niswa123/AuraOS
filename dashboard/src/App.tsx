@@ -1144,18 +1144,46 @@ console.log('Output logs:', result.stdout);`;
             {/* Scrollable Modal Content */}
             <div className="custom-scrollbar" style={{ flex: 1, overflowY: 'auto', paddingRight: '16px', marginTop: '20px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '20px', fontSize: '0.8rem', lineHeight: '1.6', color: 'var(--color-text-secondary)' }}>
               
-              {/* Section 1 */}
+              {/* Section 1: Product Overview & Moats */}
               <div>
-                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>1. Local SDK Installation</h4>
+                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>1. AuraOS Overview & Architectural Moats</h4>
+                <p style={{ margin: '0 0 10px 0' }}>
+                  AuraOS is a secure, resource-efficient cloud runtime environment and sandbox supervisor for ИИ-агентов (<strong>"Docker for AI Agents"</strong>). It isolates untrusted execution loops under strict security rules while protecting and persisting agent reasoning states.
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(255,255,255,0.01)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.03)' }}>
+                  <div style={{ fontSize: '0.75rem', lineHeight: '1.5' }}>
+                    <strong style={{ color: 'var(--neon-teal)' }}>🛡️ Moat 1: AuraFS (Discrete SQLite VFS)</strong>
+                    <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-secondary)' }}>
+                      SQLite-backed virtual filesystem stored in tmpfs (RAM) per sandbox session. Allows instant tree-of-thought branching (&lt; 1ms) and logging of file audit events (size, operations, diffs) under 2ms.
+                    </p>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', lineHeight: '1.5', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px' }}>
+                    <strong style={{ color: 'var(--neon-teal)' }}>⚡ Moat 2: Zero-KVM WarmPool (Cgroups Freezer)</strong>
+                    <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-secondary)' }}>
+                      Maintains pre-warmed running containers. Suspends processes via Docker cgroups Freezer API (0% CPU cost) during sleep, keeping TCP sockets alive and thawing containers instantly in &lt; 15ms.
+                    </p>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', lineHeight: '1.5', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px' }}>
+                    <strong style={{ color: 'var(--neon-teal)' }}>👁️ Moat 3: Cognitive Egress (Semantic Firewall)</strong>
+                    <p style={{ margin: '2px 0 0 0', color: 'var(--color-text-secondary)' }}>
+                      Intercepts and decrypts outgoing TLS payloads on Port 8086. Runs real-time vector checks using pgvector cosine similarity to detect and block credentials/secrets leakage with &lt; 5ms cache overhead.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2 */}
+              <div>
+                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>2. Local SDK Installation</h4>
                 <p style={{ margin: '0 0 8px 0' }}>Install package locally inside your terminal from repository root:</p>
                 <pre style={{ background: 'rgba(0,0,0,0.4)', padding: '12px', borderRadius: '6px', fontFamily: 'monospace', color: 'var(--neon-teal)', border: '1px solid rgba(255,255,255,0.03)' }}>
                   pip install -e ./sdk/python
                 </pre>
               </div>
 
-              {/* Section 2 */}
+              {/* Section 3 */}
               <div>
-                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>2. SDK Sandbox Integration Code</h4>
+                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>3. SDK Sandbox Integration Code</h4>
                 <p style={{ margin: '0 0 8px 0' }}>Instantiate container sandboxes programmatically in Python:</p>
                 <pre style={{ background: 'rgba(0,0,0,0.4)', padding: '12px', borderRadius: '6px', fontFamily: 'monospace', color: 'var(--color-text-secondary)', border: '1px solid rgba(255,255,255,0.03)', overflowX: 'auto' }}>
 {`from auraos import Sandbox
@@ -1174,9 +1202,9 @@ print("Duration:", result.duration_ms, "ms")`}
                 </pre>
               </div>
 
-              {/* Section 3 */}
+              {/* Section 4 */}
               <div>
-                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>3. REST API Gateway Router</h4>
+                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>4. REST API Gateway Router</h4>
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '8px', border: '1px solid rgba(255,255,255,0.04)' }}>
                   <thead>
                     <tr style={{ background: 'rgba(255,255,255,0.02)', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -1210,9 +1238,9 @@ print("Duration:", result.duration_ms, "ms")`}
                 </table>
               </div>
 
-              {/* Section 4 */}
+              {/* Section 5 */}
               <div>
-                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>4. Sandbox Security Controls</h4>
+                <h4 style={{ color: 'var(--color-text-primary)', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 'bold' }}>5. Sandbox Security Controls</h4>
                 <p style={{ margin: 0 }}>
                   Sandbox containers run with strict resource caps to prevent host exhaustion. The hard boundary defaults are:
                   RAM: <strong style={{ color: 'var(--color-text-primary)' }}>128MB</strong> (swap disabled) | CPU: <strong style={{ color: 'var(--color-text-primary)' }}>0.5 core</strong> | Timeout: <strong style={{ color: 'var(--color-text-primary)' }}>15s</strong> | Network: <strong style={{ color: 'var(--color-text-primary)' }}>Egress Whitelist (port 8086)</strong>
