@@ -9,7 +9,10 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "migrate:up": "tsx src/core/db/migrate.ts",
-    "test:db": "tsx src/core/db/test-connection.ts"
+    "test:db": "tsx src/core/db/test-connection.ts",
+    "test:unit": "tsx tests/unit/test-types-and-limits.ts",
+    "test:integration": "tsx tests/integration/test-api-and-ws.ts",
+    "test": "npm run test:unit && npm run test:integration"
   },
   "dependencies": {
     "dockerode": "^5.0.1",
