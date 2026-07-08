@@ -143,11 +143,18 @@ body {
   display: grid;
   grid-template-columns: 1fr;
   gap: 24px;
+  align-items: start;
 }
 
 @media (min-width: 1024px) {
   .main-grid {
     grid-template-columns: 360px 1fr;
+  }
+  
+  .sidebar-panel {
+    position: sticky;
+    top: 24px;
+    align-self: start;
   }
 }
 

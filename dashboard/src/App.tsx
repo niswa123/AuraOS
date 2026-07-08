@@ -498,7 +498,7 @@ console.log('Output logs:', result.stdout);`;
       <div className="main-grid">
         
         {/* Left Column: Container list & controls */}
-        <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="panel sidebar-panel" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {showCreateForm ? (
             /* Register Agent Form Panel */
