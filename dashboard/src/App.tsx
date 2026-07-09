@@ -159,9 +159,7 @@ export default function App() {
             const exists = prev.some(a => a.id === agentId);
             const nextLastActive = payload.status === 'running' 
               ? 'Active now' 
-              : payload.status === 'hibernating' 
-              ? 'Sleeping' 
-              : 'Idle';
+              : 'just now';
             if (exists) {
               return prev.map(a => a.id === agentId ? { ...a, status: payload.status, lastActive: nextLastActive } : a);
             } else {
@@ -264,7 +262,7 @@ export default function App() {
   const triggerHibernate = () => {
     if (!selectedAgent) return;
     const time = new Date().toLocaleTimeString();
-    setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'sleeping', lastActive: 'Idle' } : a));
+    setAgents(prev => prev.map(a => a.id === selectedAgent.id ? { ...a, status: 'hibernating', lastActive: 'just now' } : a));
     setLogs(prev => ({
       ...prev,
       [selectedAgent.id]: [
