@@ -489,13 +489,7 @@ console.log('Output logs:', result.stdout);`;
             <span>Database: Connected</span>
           </div>
 
-          <div className="badge">
-            <span 
-              className={`status-dot ${wsConnected ? 'active' : 'sleeping'}`} 
-              style={{ position: 'relative', border: 'none', width: '8px', height: '8px' }}
-            ></span>
-            <span>Live Stream: {wsConnected ? 'Connected' : 'Offline'}</span>
-          </div>
+
         </div>
       </header>
 
