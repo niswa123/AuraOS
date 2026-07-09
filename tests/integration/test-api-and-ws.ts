@@ -168,7 +168,7 @@ async function runTests() {
     assert(res.data.success === true, 'success: true');
     assert(typeof res.data.agent?.id === 'string', 'Returns agent.id (UUID)');
     assert(res.data.agent?.runtime === 'python', 'Returns agent.runtime = python');
-    assert(res.data.agent?.status === 'sleeping', 'Initial status = sleeping');
+    assert(res.data.agent?.status === 'hibernating', 'Initial status = hibernating');
 
     createdAgentId = res.data.agent?.id;
   } catch (err: any) {

@@ -104,7 +104,7 @@ export class WebhookListener {
                 a.id, 
                 a.name, 
                 a.configuration->>'runtime' as runtime,
-                COALESCE(e.status, 'sleeping') as status,
+                COALESCE(e.status, 'hibernating') as status,
                 e.updated_at
               FROM agents a
               LEFT JOIN LATERAL (
@@ -176,7 +176,7 @@ export class WebhookListener {
               // B. Create execution
               const execRes = await db.query(
                 'INSERT INTO executions (agent_id, status) VALUES ($1, $2) RETURNING id',
-                [agentId, 'sleeping']
+                [agentId, 'hibernating']
               );
               const execId = execRes.rows[0].id;
 
@@ -187,11 +187,11 @@ export class WebhookListener {
               );
 
               // D. Broadcast to WS live stream
-              liveStream.sendStatus(agentId, 'sleeping', name, runtime);
+              liveStream.sendStatus(agentId, 'hibernating', name, runtime);
 
               sendJson(201, {
                 success: true,
-                agent: { id: agentId, name, runtime, status: 'sleeping', lastActive: 'never' }
+                agent: { id: agentId, name, runtime, status: 'hibernating', lastActive: 'never' }
               });
             } catch (err: any) {
               sendJson(500, { success: false, error: err.message });
@@ -226,7 +226,7 @@ export class WebhookListener {
                 );
 
                 // Broadcast update
-                liveStream.sendStatus(agentId, 'sleeping', name, runtime);
+                liveStream.sendStatus(agentId, 'hibernating', name, runtime);
 
                 sendJson(200, { success: true, message: 'Agent updated successfully.' });
               } catch (err: any) {

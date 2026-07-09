@@ -80,8 +80,8 @@ class ChronosEventBroker {
 
     console.log(`[Chronos Broker] Agent ${agentId} suspended. Sandbox destroyed. Trigger registered: ${trigger.type}`);
 
-    // Update stream to Sleep state
-    liveStream.sendStatus(agentId, 'sleeping');
+    // Update stream to Hibernating state
+    liveStream.sendStatus(agentId, 'hibernating');
     liveStream.sendTimelineTransition(agentId, 'Sleep');
     liveStream.sendStateUpdate(agentId, variables);
     liveStream.sendLog(agentId, `Teardown of sandbox container complete. Agent sleeping, waiting for trigger: ${trigger.type}`, 'system');
@@ -91,7 +91,7 @@ class ChronosEventBroker {
       agentId,
       executionId,
       suspendedAt: new Date().toISOString(),
-      status: 'sleeping'
+      status: 'hibernating'
     };
   }
 
